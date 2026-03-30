@@ -98,6 +98,12 @@
         <div>Arraste arquivos aqui ou selecione no campo acima.</div>
       </div>
       <div class="row" style="margin-top:12px;">
+        <label class="small">Motor:
+          <select id="engineSelect">
+            <option value="python">Python</option>
+            <option value="r">R</option>
+          </select>
+        </label>
         <button id="runBtn" class="btn" disabled>Processar planilhas</button>
         <span id="status" class="small">Nenhum arquivo selecionado.</span>
       </div>
@@ -111,6 +117,14 @@
     <div class="card">
       <h2>Distribuição por núcleo</h2>
       <canvas id="nucleoChart"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>Gráficos gerados pelo pipeline</h2>
+      <div class="row">
+        <img id="plotNucleo" alt="Distribuição por núcleo (R)" style="max-width:48%; border-radius:10px; display:none;"/>
+        <img id="plotScore" alt="Histograma de score (R)" style="max-width:48%; border-radius:10px; display:none;"/>
+      </div>
     </div>
 
     <div class="card">
@@ -141,6 +155,9 @@
     const dropzone = document.getElementById('dropzone');
     const kpisEl = document.getElementById('kpis');
     const tbody = document.querySelector('#topTable tbody');
+    const engineSelect = document.getElementById('engineSelect');
+    const plotNucleo = document.getElementById('plotNucleo');
+    const plotScore = document.getElementById('plotScore');
     let chart;
 
     function setStatus(msg) { statusEl.textContent = msg; }
@@ -169,6 +186,7 @@
       setStatus('Processando...');
       const fd = new FormData();
       for (const file of fileInput.files) fd.append('files[]', file);
+      fd.append('engine', engineSelect.value);
       try {
         const res = await fetch('run_pipeline.php', { method: 'POST', body: fd });
         const data = await res.json();
@@ -214,6 +232,11 @@
         },
         options: { responsive: true, plugins: { legend: { display: false } } }
       });
+
+      if (data.plot_urls) {
+        if (data.plot_urls.core_distribution) { plotNucleo.src = data.plot_urls.core_distribution + '?t=' + Date.now(); plotNucleo.style.display = 'block'; }
+        if (data.plot_urls.score_histogram) { plotScore.src = data.plot_urls.score_histogram + '?t=' + Date.now(); plotScore.style.display = 'block'; }
+      }
 
       tbody.innerHTML = '';
       for (const r of data.top_articles) {

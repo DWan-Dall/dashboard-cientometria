@@ -13,9 +13,13 @@ if (!isset($_FILES['files'])) {
   exit;
 }
 
+$engine = $_POST['engine'] ?? 'python';
+$engine = in_array($engine, ['python', 'r'], true) ? $engine : 'python';
+
 $uploadDir = __DIR__ . '/tmp_uploads';
-if (!is_dir($uploadDir)) {
-  mkdir($uploadDir, 0777, true);
+$plotDir = $uploadDir . '/plots';
+if (!is_dir($plotDir)) {
+  mkdir($plotDir, 0777, true);
 }
 
 $paths = [];
@@ -41,9 +45,19 @@ if (count($paths) === 0) {
 }
 
 $payloadPath = $uploadDir . '/' . uniqid('payload_', true) . '.json';
-file_put_contents($payloadPath, json_encode(['files' => $paths], JSON_UNESCAPED_UNICODE));
+$payload = [
+  'files' => $paths,
+  'plot_dir' => $plotDir,
+  'plot_url_prefix' => 'tmp_uploads/plots'
+];
+file_put_contents($payloadPath, json_encode($payload, JSON_UNESCAPED_UNICODE));
 
-$cmd = 'python3 ' . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' ' . escapeshellarg($payloadPath) . ' 2>&1';
+if ($engine === 'r') {
+  $cmd = 'Rscript ' . escapeshellarg(__DIR__ . '/scripts/pipeline.R') . ' ' . escapeshellarg($payloadPath) . ' 2>&1';
+} else {
+  $cmd = 'python3 ' . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' ' . escapeshellarg($payloadPath) . ' 2>&1';
+}
+
 $output = [];
 $returnVar = 0;
 exec($cmd, $output, $returnVar);
@@ -55,7 +69,7 @@ foreach ($paths as $p) {
 
 if ($returnVar !== 0) {
   http_response_code(500);
-  echo json_encode(['error' => "Falha no pipeline: " . implode("\n", $output)]);
+  echo json_encode(['error' => "Falha no pipeline ({$engine}): " . implode("\n", $output)]);
   exit;
 }
 

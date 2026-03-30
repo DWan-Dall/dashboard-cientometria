@@ -1,10 +1,11 @@
 # dashboard-cientometria
 
-Dashboard interativo (PHP + Python) para apoiar revisões sistemáticas com foco em cientometria de enchentes e IA/ML.
+Dashboard interativo (PHP + Python/R) para apoiar revisões sistemáticas com foco em cientometria de enchentes e IA/ML.
 
 ## Funcionalidades
 
 - Upload de múltiplas planilhas (`.csv`, `.xlsx`) de fontes como Scopus, Lens e similares.
+- Seleção do motor de processamento: **Python** ou **R** diretamente na interface.
 - Normalização de campos-chave: título, ano, resumo, palavras-chave, citações, DOI e periódico.
 - Deduplicação em 2 estágios:
   1. por DOI;
@@ -22,13 +23,15 @@ Dashboard interativo (PHP + Python) para apoiar revisões sistemáticas com foco
   - Periférico (30–49.99)
   - Descarte (<30)
 - Visualização com KPIs, gráfico de distribuição e tabela dos artigos com maior score.
+- Quando o motor **R** é usado, o pipeline também gera gráficos PNG (ggplot2) servidos no localhost.
 
 ## Estrutura
 
 - `index.php`: interface web interativa.
-- `run_pipeline.php`: endpoint de upload e execução do pipeline.
-- `scripts/pipeline.py`: pipeline de normalização, deduplicação, filtragem e scoring.
-- `Dockerfile`: imagem única com PHP + Python.
+- `run_pipeline.php`: endpoint de upload e execução do pipeline (Python ou R).
+- `scripts/pipeline.py`: pipeline em Python.
+- `scripts/pipeline.R`: pipeline equivalente em R + geração de gráficos.
+- `Dockerfile`: imagem única com PHP + Python + R.
 - `docker-compose.yml`: execução local com container.
 
 ## Como executar (local)
@@ -37,12 +40,20 @@ Pré-requisitos:
 
 - PHP 8+
 - Python 3.10+
+- R 4.2+
 - Pacotes Python: `pandas`, `openpyxl`
+- Pacotes R: `jsonlite`, `readxl`, `ggplot2`
 
 Instalação de dependências Python:
 
 ```bash
 pip install -r requirements.txt
+```
+
+Instalação de dependências R:
+
+```r
+install.packages(c("jsonlite", "readxl", "ggplot2"), repos = "https://cloud.r-project.org")
 ```
 
 Iniciar aplicação:
@@ -79,7 +90,9 @@ Acesse:
 
 - http://localhost:8000
 
+> Nota Docker: a imagem usa `venv` interno (`/opt/venv`) para instalar dependências Python, evitando o erro de PEP 668.
+
 ## Observações
 
-- O mapeamento de colunas usa aliases comuns entre bases. Você pode ajustar os aliases em `FIELD_MAP` no arquivo `scripts/pipeline.py`.
-- O pipeline foi desenhado para priorizar robustez em dados heterogêneos e pode ser refinado com regras extras de matching fuzzy para títulos, se necessário.
+- O mapeamento de colunas usa aliases comuns entre bases. Você pode ajustar os aliases em `FIELD_MAP` (Python) ou `field_map` (R).
+- Os gráficos gerados em R são salvos em `tmp_uploads/plots/` para visualização no navegador.
