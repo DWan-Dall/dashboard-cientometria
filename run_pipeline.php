@@ -2,6 +2,29 @@
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 
+function parseSizeToBytes($value) {
+  $value = trim($value);
+  $unit = strtolower(substr($value, -1));
+  $num = (float)$value;
+  switch ($unit) {
+    case 'g': return (int)($num * 1024 * 1024 * 1024);
+    case 'm': return (int)($num * 1024 * 1024);
+    case 'k': return (int)($num * 1024);
+    default: return (int)$num;
+  }
+}
+
+$contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+$postMax = parseSizeToBytes(ini_get('post_max_size'));
+if ($postMax > 0 && $contentLength > $postMax) {
+  http_response_code(413);
+  echo json_encode([
+    'error' => 'Arquivo(s) excedem o limite de upload do PHP.',
+    'details' => 'Aumente post_max_size/upload_max_filesize (ex.: 128M).'
+  ], JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   http_response_code(405);
   echo json_encode(['error' => 'Método não permitido']);

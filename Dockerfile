@@ -21,4 +21,4 @@ COPY . /app
 
 EXPOSE 8000
 
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "/app"]
+CMD ["php", "-d", "upload_max_filesize=128M", "-d", "post_max_size=128M", "-d", "max_file_uploads=100", "-S", "0.0.0.0:8000", "-t", "/app"]

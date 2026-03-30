@@ -132,13 +132,33 @@ def classify(score100):
         return "Periférico"
     return "Descarte"
 
+def parse_bibtex(path: Path) -> pd.DataFrame:
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    entries = re.split(r"@\w+\s*\{", text)[1:]
+    rows = []
+    for e in entries:
+        fields = {}
+        for m in re.finditer(r'(\\w+)\\s*=\\s*["{]([^"}]+)', e, flags=re.IGNORECASE):
+            fields[m.group(1).lower()] = m.group(2).strip()
+        rows.append({
+            "title": fields.get("title", ""),
+            "year": fields.get("year", ""),
+            "abstract": fields.get("abstract", ""),
+            "keywords": fields.get("keywords", ""),
+            "citations": fields.get("citedby", 0),
+            "doi": fields.get("doi", ""),
+            "journal": fields.get("journal", fields.get("booktitle", "")),
+        })
+    return pd.DataFrame(rows)
 
 def load_file(path: Path) -> pd.DataFrame:
     suffix = path.suffix.lower()
-    if suffix == ".csv":
-        return pd.read_csv(path)
+    if suffix in {".csv", ".tsv", ".txt"}:
+        return pd.read_csv(path, sep=None, engine="python", encoding="utf-8-sig", on_bad_lines="skip")
     if suffix in {".xlsx", ".xls"}:
         return pd.read_excel(path)
+    if suffix == ".bib":
+        return parse_bibtex(path)
     raise ValueError(f"Formato não suportado: {path.name}")
 
 

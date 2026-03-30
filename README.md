@@ -4,7 +4,7 @@ Dashboard interativo (PHP + Python/R) para apoiar revisões sistemáticas com fo
 
 ## Funcionalidades
 
-- Upload de múltiplas planilhas (`.csv`, `.xlsx`) de fontes como Scopus, Lens e similares.
+- Upload de múltiplas planilhas (`.csv`, `.tsv`, `.txt`, `.xlsx`, `.bib`) de fontes como Scopus, Lens e similares.
 - Seleção do motor de processamento: **Python** ou **R** diretamente na interface.
 - Normalização de campos-chave: título, ano, resumo, palavras-chave, citações, DOI e periódico.
 - Deduplicação em 2 estágios:
@@ -59,7 +59,7 @@ install.packages(c("jsonlite", "readxl", "ggplot2"), repos = "https://cloud.r-pr
 Iniciar aplicação:
 
 ```bash
-php -S localhost:8000
+php -d upload_max_filesize=128M -d post_max_size=128M -d max_file_uploads=100 -S localhost:8000
 ```
 
 Acesse:
@@ -96,3 +96,4 @@ Acesse:
 
 - O mapeamento de colunas usa aliases comuns entre bases. Você pode ajustar os aliases em `FIELD_MAP` (Python) ou `field_map` (R).
 - Os gráficos gerados em R são salvos em `tmp_uploads/plots/` para visualização no navegador.
+- Para arquivos Scopus muito grandes, mantenha `post_max_size` e `upload_max_filesize` em pelo menos `128M`.

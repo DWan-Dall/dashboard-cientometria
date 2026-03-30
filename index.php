@@ -92,9 +92,9 @@
   <div class="container">
     <div class="card">
       <h1>Dashboard interativo de cientometria</h1>
-      <p>Importe planilhas de Scopus, Lens e outras bases (<strong>.csv/.xlsx</strong>). O sistema normaliza campos, deduplica por DOI + título e aplica filtro temático + escore de relevância automaticamente.</p>
+      <p>Importe planilhas de Scopus, Lens e outras bases (<strong>.csv/.xlsx/.bib</strong>). O sistema normaliza campos, deduplica por DOI + título e aplica filtro temático + escore de relevância automaticamente.</p>
       <div id="dropzone" class="dropzone">
-        <input id="fileInput" type="file" multiple accept=".csv,.xlsx" />
+        <input id="fileInput" type="file" multiple accept=".csv,.xlsx,.bib,.tsv,.txt" />
         <div>Arraste arquivos aqui ou selecione no campo acima.</div>
       </div>
       <div class="row" style="margin-top:12px;">

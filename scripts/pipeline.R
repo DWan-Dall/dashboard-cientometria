@@ -59,6 +59,45 @@ minmax <- function(x) {
   (x - mn) / (mx - mn)
 }
 
+
+parse_bib <- function(path) {
+  txt <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  parts <- unlist(strsplit(txt, "@\\w+\\s*\\{"))
+  parts <- parts[nzchar(parts)]
+  rows <- lapply(parts, function(e) {
+    g <- function(field) {
+      m <- regexec(paste0(field, "\\s*=\\s*[\"{]([^\"}]+)"), e, ignore.case = TRUE)
+      r <- regmatches(e, m)[[1]]
+      if (length(r) >= 2) r[2] else ""
+    }
+    data.frame(
+      title = g("title"),
+      year = g("year"),
+      abstract = g("abstract"),
+      keywords = g("keywords"),
+      citations = g("citedby"),
+      doi = g("doi"),
+      journal = ifelse(nzchar(g("journal")), g("journal"), g("booktitle")),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, rows)
+}
+
+load_input <- function(f) {
+  ext <- tolower(tools::file_ext(f))
+  if (ext %in% c("csv", "tsv", "txt")) {
+    df <- tryCatch(read.csv(f, stringsAsFactors = FALSE), error = function(e) NULL)
+    if (is.null(df) || ncol(df) <= 1) {
+      df <- read.delim(f, stringsAsFactors = FALSE)
+    }
+    return(df)
+  }
+  if (ext %in% c("xlsx", "xls")) return(read_excel(f))
+  if (ext == "bib") return(parse_bib(f))
+  stop(paste("Formato não suportado:", ext))
+}
+
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1) stop("Uso: pipeline.R <payload.json>")
 payload <- fromJSON(args[1])
@@ -74,8 +113,7 @@ h <- c("rain", "rainfall", "chuva", "streamflow", "vazao", "vazão", "water leve
 g <- c("satellite", "dem", "digital elevation", "remote sensing", "geospatial", "gis")
 
 frames <- lapply(files, function(f) {
-  ext <- tolower(tools::file_ext(f))
-  df <- if (ext == "csv") read.csv(f, stringsAsFactors = FALSE) else read_excel(f)
+  df <- load_input(f)
   harmonize(as.data.frame(df, stringsAsFactors = FALSE))
 })
 all_df <- do.call(rbind, frames)
