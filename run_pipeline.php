@@ -40,6 +40,10 @@ if (!isset($_FILES['files'])) {
 $engine = $_POST['engine'] ?? 'python';
 $engine = in_array($engine, ['python', 'r'], true) ? $engine : 'python';
 
+$paramsRaw = $_POST['params'] ?? '{}';
+$params = json_decode($paramsRaw, true);
+if (!is_array($params)) { $params = []; }
+
 $uploadDir = __DIR__ . '/tmp_uploads';
 $plotDir = $uploadDir . '/plots';
 if (!is_dir($plotDir)) {
@@ -72,7 +76,8 @@ $payloadPath = $uploadDir . '/' . uniqid('payload_', true) . '.json';
 $payload = [
   'files' => $paths,
   'plot_dir' => $plotDir,
-  'plot_url_prefix' => 'tmp_uploads/plots'
+  'plot_url_prefix' => 'tmp_uploads/plots',
+  'params' => $params
 ];
 file_put_contents($payloadPath, json_encode($payload, JSON_UNESCAPED_UNICODE));
 

@@ -107,11 +107,25 @@
         <button id="runBtn" class="btn" disabled>Processar planilhas</button>
         <span id="status" class="small">Nenhum arquivo selecionado.</span>
       </div>
+      <details style="margin-top:10px;">
+        <summary style="cursor:pointer; color:#cbd5e1;">Parâmetros de cálculo (editáveis)</summary>
+        <div class="row" style="margin-top:10px;">
+          <label class="small">Peso C* <input id="wC" type="number" step="0.01" value="0.35" style="width:80px"></label>
+          <label class="small">Peso R* <input id="wR" type="number" step="0.01" value="0.20" style="width:80px"></label>
+          <label class="small">Peso T* <input id="wT" type="number" step="0.01" value="0.30" style="width:80px"></label>
+          <label class="small">Peso A* <input id="wA" type="number" step="0.01" value="0.15" style="width:80px"></label>
+          <label class="small">Ano min <input id="yearMin" type="number" value="1992" style="width:90px"></label>
+          <label class="small">Ano max <input id="yearMax" type="number" value="2026" style="width:90px"></label>
+          <label class="small">Núcleo A >= <input id="thA" type="number" value="70" style="width:80px"></label>
+          <label class="small">Núcleo B >= <input id="thB" type="number" value="50" style="width:80px"></label>
+          <label class="small">Periférico >= <input id="thP" type="number" value="30" style="width:80px"></label>
+        </div>
+      </details>
     </div>
 
     <div class="card">
       <h2>Resumo do pipeline</h2>
-      <div class="grid" id="kpis"></div>
+      <div class="grid" id="kpis"></div><pre id="paramsView" class="small" style="white-space:pre-wrap; margin-top:10px;"></pre>
     </div>
 
     <div class="card">
@@ -158,6 +172,7 @@
     const engineSelect = document.getElementById('engineSelect');
     const plotNucleo = document.getElementById('plotNucleo');
     const plotScore = document.getElementById('plotScore');
+    const paramsView = document.getElementById('paramsView');
     let chart;
 
     function setStatus(msg) { statusEl.textContent = msg; }
@@ -187,6 +202,22 @@
       const fd = new FormData();
       for (const file of fileInput.files) fd.append('files[]', file);
       fd.append('engine', engineSelect.value);
+      const params = {
+        weights: {
+          c: Number(document.getElementById('wC').value || 0.35),
+          r: Number(document.getElementById('wR').value || 0.2),
+          t: Number(document.getElementById('wT').value || 0.3),
+          a: Number(document.getElementById('wA').value || 0.15)
+        },
+        year_min: Number(document.getElementById('yearMin').value || 1992),
+        year_max: Number(document.getElementById('yearMax').value || 2026),
+        thresholds: {
+          nucleo_a: Number(document.getElementById('thA').value || 70),
+          nucleo_b: Number(document.getElementById('thB').value || 50),
+          periferico: Number(document.getElementById('thP').value || 30)
+        }
+      };
+      fd.append('params', JSON.stringify(params));
       try {
         const res = await fetch('run_pipeline.php', { method: 'POST', body: fd });
         const raw = await res.text();
@@ -212,19 +243,21 @@
 
     function render(data) {
       const s = data.summary;
+      const cc = Object.assign({'Núcleo A':0,'Núcleo B':0,'Periférico':0,'Descarte':0}, s.core_counts || {});
       kpisEl.innerHTML = [
         kpi('Registros brutos', s.raw_records),
         kpi('Após dedup DOI', s.after_doi),
         kpi('Após dedup título', s.after_title),
         kpi('Selecionados no filtro temático', s.thematic_selected),
-        kpi('Núcleo A', s.core_counts['Núcleo A']),
-        kpi('Núcleo B', s.core_counts['Núcleo B']),
-        kpi('Periférico', s.core_counts['Periférico']),
-        kpi('Descarte', s.core_counts['Descarte'])
+        kpi('Núcleo A', cc['Núcleo A']),
+        kpi('Núcleo B', cc['Núcleo B']),
+        kpi('Periférico', cc['Periférico']),
+        kpi('Descarte', cc['Descarte'])
       ].join('');
 
-      const labels = Object.keys(s.core_counts);
-      const values = labels.map(k => s.core_counts[k]);
+      const labels = Object.keys(cc);
+      const values = labels.map(k => cc[k]);
+      paramsView.textContent = data.used_params ? ('Parâmetros usados: ' + JSON.stringify(data.used_params, null, 2)) : ''; 
       if (chart) chart.destroy();
       chart = new Chart(document.getElementById('nucleoChart'), {
         type: 'bar',
@@ -239,13 +272,15 @@
         options: { responsive: true, plugins: { legend: { display: false } } }
       });
 
+      plotNucleo.style.display = "none"; plotScore.style.display = "none";
       if (data.plot_urls) {
         if (data.plot_urls.core_distribution) { plotNucleo.src = data.plot_urls.core_distribution + '?t=' + Date.now(); plotNucleo.style.display = 'block'; }
         if (data.plot_urls.score_histogram) { plotScore.src = data.plot_urls.score_histogram + '?t=' + Date.now(); plotScore.style.display = 'block'; }
       }
 
       tbody.innerHTML = '';
-      for (const r of data.top_articles) {
+      const rows = Array.isArray(data.top_articles) ? data.top_articles : [];
+      for (const r of rows) {
         const tr = document.createElement('tr');
         const cls = r.nucleo === 'Núcleo A' ? 'nA' : r.nucleo === 'Núcleo B' ? 'nB' : r.nucleo === 'Periférico' ? 'nP' : 'nD';
         tr.innerHTML = `

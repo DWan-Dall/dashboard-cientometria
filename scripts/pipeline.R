@@ -104,6 +104,25 @@ payload <- fromJSON(args[1])
 files <- payload$files
 plot_dir <- payload$plot_dir
 plot_prefix <- payload$plot_url_prefix
+params <- payload$params
+if (is.null(params)) params <- list()
+weights <- params$weights; if (is.null(weights)) weights <- list()
+thresholds <- params$thresholds; if (is.null(thresholds)) thresholds <- list()
+used_params <- list(
+  weights = list(
+    c = as.numeric(ifelse(is.null(weights$c), 0.35, weights$c)),
+    r = as.numeric(ifelse(is.null(weights$r), 0.20, weights$r)),
+    t = as.numeric(ifelse(is.null(weights$t), 0.30, weights$t)),
+    a = as.numeric(ifelse(is.null(weights$a), 0.15, weights$a))
+  ),
+  year_min = as.integer(ifelse(is.null(params$year_min), 1992, params$year_min)),
+  year_max = as.integer(ifelse(is.null(params$year_max), 2026, params$year_max)),
+  thresholds = list(
+    nucleo_a = as.numeric(ifelse(is.null(thresholds$nucleo_a), 70, thresholds$nucleo_a)),
+    nucleo_b = as.numeric(ifelse(is.null(thresholds$nucleo_b), 50, thresholds$nucleo_b)),
+    periferico = as.numeric(ifelse(is.null(thresholds$periferico), 30, thresholds$periferico))
+  )
+)
 
 a <- c("flood", "inundacao", "inundação", "enchente", "flooding", "inundation")
 b <- c("forecast", "forecasting", "prediction", "previsao", "previsão", "early warning")
@@ -137,13 +156,16 @@ if (nrow(selected) == 0) {
   result <- list(summary = list(raw_records = raw_records, after_doi = after_doi, after_title = after_title, thematic_selected = 0,
                                 core_counts = list("Núcleo A" = 0, "Núcleo B" = 0, "Periférico" = 0, "Descarte" = 0)),
                  top_articles = list(),
-                 plot_urls = list())
+                 plot_urls = list(),
+                 used_params = used_params)
   cat(toJSON(result, auto_unbox = TRUE, force = TRUE, pretty = FALSE))
   quit(save = "no")
 }
 
-selected$c_star <- minmax(selected$citations)
-selected$r_star <- minmax(selected$year)
+cmin <- ifelse(is.null(params$c_min), min(selected$citations, na.rm = TRUE), as.numeric(params$c_min))
+cmax <- ifelse(is.null(params$c_max), max(selected$citations, na.rm = TRUE), as.numeric(params$c_max))
+if (cmax == cmin) { selected$c_star <- rep(1, nrow(selected)) } else { selected$c_star <- pmax(0, pmin(1, (selected$citations - cmin)/(cmax-cmin))) }
+if (used_params$year_max == used_params$year_min) { selected$r_star <- rep(1, nrow(selected)) } else { selected$r_star <- pmax(0, pmin(1, (selected$year - used_params$year_min)/(used_params$year_max-used_params$year_min))) }
 
 selected$t_star <- ifelse(contains_any(normalize_text(selected$title), a) & contains_any(normalize_text(selected$title), b) & contains_any(normalize_text(selected$title), c), 1.0, 0.7)
 selected$a_star <- pmax(0.5, pmin(1.0, (ifelse(contains_any(selected$blob_norm, h) & contains_any(selected$blob_norm, g), 1, 0.5) +
@@ -151,12 +173,13 @@ selected$a_star <- pmax(0.5, pmin(1.0, (ifelse(contains_any(selected$blob_norm, 
   ifelse(contains_any(selected$blob_norm, b), 1, 0.5) +
   ifelse(contains_any(selected$blob_norm, c("urban","coastal","river","city","basin","watershed")), 1, 0.5)) / 4))
 
-selected$score <- 0.35 * selected$c_star + 0.20 * selected$r_star + 0.30 * selected$t_star + 0.15 * selected$a_star
+w <- used_params$weights
+selected$score <- w$c * selected$c_star + w$r * selected$r_star + w$t * selected$t_star + w$a * selected$a_star
 selected$score100 <- minmax(selected$score) * 100
-selected$nucleo <- ifelse(selected$score100 >= 70, "Núcleo A", ifelse(selected$score100 >= 50, "Núcleo B", ifelse(selected$score100 >= 30, "Periférico", "Descarte")))
+th <- used_params$thresholds
+selected$nucleo <- ifelse(selected$score100 >= th$nucleo_a, "Núcleo A", ifelse(selected$score100 >= th$nucleo_b, "Núcleo B", ifelse(selected$score100 >= th$periferico, "Periférico", "Descarte")))
 
-core_table <- table(factor(selected$nucleo, levels = c("Núcleo A", "Núcleo B", "Periférico", "Descarte")))
-core_counts <- as.list(as.integer(core_table)); names(core_counts) <- names(core_table)
+core_counts <- list("Núcleo A" = sum(selected$nucleo == "Núcleo A"), "Núcleo B" = sum(selected$nucleo == "Núcleo B"), "Periférico" = sum(selected$nucleo == "Periférico"), "Descarte" = sum(selected$nucleo == "Descarte"))
 
 if (!dir.exists(plot_dir)) dir.create(plot_dir, recursive = TRUE)
 ts <- as.integer(Sys.time())
@@ -172,10 +195,16 @@ ggsave(score_plot, p2, width = 8, height = 4, dpi = 120)
 top <- selected[order(-selected$score100), c("title", "year", "citations", "doi", "nucleo", "score100")]
 top <- head(top, 50)
 
+top_articles <- lapply(seq_len(nrow(top)), function(i) {
+  r <- top[i, ]
+  list(title = as.character(r$title), year = as.integer(r$year), citations = as.numeric(r$citations), doi = as.character(r$doi), nucleo = as.character(r$nucleo), score100 = as.numeric(r$score100))
+})
+
 result <- list(
   summary = list(raw_records = raw_records, after_doi = after_doi, after_title = after_title, thematic_selected = nrow(selected), core_counts = core_counts),
-  top_articles = apply(top, 1, function(r) list(title = r[["title"]], year = as.integer(r[["year"]]), citations = as.numeric(r[["citations"]]), doi = r[["doi"]], nucleo = r[["nucleo"]], score100 = as.numeric(r[["score100"]]))),
-  plot_urls = list(core_distribution = paste0(plot_prefix, "/", basename(core_plot)), score_histogram = paste0(plot_prefix, "/", basename(score_plot)))
+  top_articles = top_articles,
+  plot_urls = list(core_distribution = paste0(plot_prefix, "/", basename(core_plot)), score_histogram = paste0(plot_prefix, "/", basename(score_plot)), generated_with = "R"),
+  used_params = used_params
 )
 
 cat(toJSON(result, auto_unbox = TRUE, force = TRUE, pretty = FALSE))

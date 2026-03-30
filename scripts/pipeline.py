@@ -89,6 +89,10 @@ def minmax(series: pd.Series):
         return pd.Series([1.0] * len(series), index=series.index)
     return (series - smin) / (smax - smin)
 
+def clamp_norm(series: pd.Series, vmin: float, vmax: float):
+    if vmax == vmin:
+        return pd.Series([1.0] * len(series), index=series.index)
+    return ((series - vmin) / (vmax - vmin)).clip(lower=0, upper=1)
 
 def score_t(row):
     t = normalize_text(row["title"])
@@ -122,13 +126,12 @@ def score_a(row):
 
     return (I + M + O + C) / 4.0
 
-
-def classify(score100):
-    if score100 >= 70:
+def classify(score100, thresholds):
+    if score100 >= thresholds["nucleo_a"]:
         return "Núcleo A"
-    if score100 >= 50:
+    if score100 >= thresholds["nucleo_b"]:
         return "Núcleo B"
-    if score100 >= 30:
+    if score100 >= thresholds["periferico"]:
         return "Periférico"
     return "Descarte"
 
@@ -161,7 +164,6 @@ def load_file(path: Path) -> pd.DataFrame:
         return parse_bibtex(path)
     raise ValueError(f"Formato não suportado: {path.name}")
 
-
 def main():
     if len(sys.argv) < 2:
         raise SystemExit("Uso: pipeline.py <payload.json>")
@@ -169,6 +171,24 @@ def main():
     payload_path = Path(sys.argv[1])
     payload = json.loads(payload_path.read_text(encoding="utf-8"))
     files = [Path(p) for p in payload.get("files", [])]
+    params = payload.get("params", {}) or {}
+    weights = params.get("weights", {}) if isinstance(params.get("weights", {}), dict) else {}
+    thresholds = params.get("thresholds", {}) if isinstance(params.get("thresholds", {}), dict) else {}
+    used_params = {
+        "weights": {
+            "c": float(weights.get("c", 0.35)),
+            "r": float(weights.get("r", 0.20)),
+            "t": float(weights.get("t", 0.30)),
+            "a": float(weights.get("a", 0.15)),
+        },
+        "year_min": int(params.get("year_min", 1992)),
+        "year_max": int(params.get("year_max", 2026)),
+        "thresholds": {
+            "nucleo_a": float(thresholds.get("nucleo_a", 70)),
+            "nucleo_b": float(thresholds.get("nucleo_b", 50)),
+            "periferico": float(thresholds.get("periferico", 30)),
+        },
+    }
     if not files:
         raise SystemExit("Nenhum arquivo recebido")
 
@@ -201,17 +221,22 @@ def main():
                 "core_counts": {"Núcleo A": 0, "Núcleo B": 0, "Periférico": 0, "Descarte": 0},
             },
             "top_articles": [],
+            "plot_urls": {"generated_with": "python"},
+            "used_params": used_params,
         }
         print(json.dumps(result, ensure_ascii=False))
         return
 
-    selected["c_star"] = minmax(selected["citations"])
-    selected["r_star"] = minmax(selected["year"])
+    cmin = params.get("c_min", float(selected["citations"].min()))
+    cmax = params.get("c_max", float(selected["citations"].max()))
+    selected["c_star"] = clamp_norm(selected["citations"], float(cmin), float(cmax))
+    selected["r_star"] = clamp_norm(selected["year"], used_params["year_min"], used_params["year_max"])
     selected["t_star"] = selected.apply(score_t, axis=1)
     selected["a_star"] = selected.apply(score_a, axis=1)
-    selected["score"] = 0.35 * selected["c_star"] + 0.20 * selected["r_star"] + 0.30 * selected["t_star"] + 0.15 * selected["a_star"]
+    w = used_params["weights"]
+    selected["score"] = w["c"] * selected["c_star"] + w["r"] * selected["r_star"] + w["t"] * selected["t_star"] + w["a"] * selected["a_star"]
     selected["score100"] = minmax(selected["score"]) * 100
-    selected["nucleo"] = selected["score100"].apply(classify)
+    selected["nucleo"] = selected["score100"].apply(lambda v: classify(v, used_params["thresholds"]))
 
     core_counts = selected["nucleo"].value_counts().to_dict()
     for c in ["Núcleo A", "Núcleo B", "Periférico", "Descarte"]:
@@ -227,6 +252,8 @@ def main():
             "thematic_selected": int(len(selected)),
             "core_counts": core_counts,
         },
+        "used_params": used_params,
+        "plot_urls": {"generated_with": "python"},
         "top_articles": [
             {
                 "title": r["title"],
