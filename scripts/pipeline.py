@@ -89,9 +89,6 @@ def minmax(series: pd.Series):
         return pd.Series([1.0] * len(series), index=series.index)
     return (series - smin) / (smax - smin)
 
-
-
-
 def clamp_norm(series: pd.Series, vmin: float, vmax: float):
     if vmax == vmin:
         return pd.Series([1.0] * len(series), index=series.index)
@@ -113,7 +110,6 @@ def score_t(row):
     has_any_topic = contains_any(t + " " + a + " " + k, FLOOD_TERMS + FORECAST_TERMS + AI_TERMS)
     return 0.4 if has_any_topic else 0.4
 
-
 def score_a(row):
     txt = row["blob_norm"]
     has_hydro = contains_any(txt, HYDRO_TERMS)
@@ -129,7 +125,6 @@ def score_a(row):
 
     return (I + M + O + C) / 4.0
 
-
 def classify(score100, thresholds):
     if score100 >= thresholds["nucleo_a"]:
         return "Núcleo A"
@@ -138,9 +133,6 @@ def classify(score100, thresholds):
     if score100 >= thresholds["periferico"]:
         return "Periférico"
     return "Descarte"
-
-
-
 
 def parse_bibtex(path: Path) -> pd.DataFrame:
     text = path.read_text(encoding="utf-8", errors="ignore")
@@ -170,7 +162,6 @@ def load_file(path: Path) -> pd.DataFrame:
     if suffix == ".bib":
         return parse_bibtex(path)
     raise ValueError(f"Formato não suportado: {path.name}")
-
 
 def main():
     if len(sys.argv) < 2:
