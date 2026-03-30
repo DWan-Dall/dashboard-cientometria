@@ -1,0 +1,10 @@
+services:
+  dashboard-cientometria:
+    build: .
+    container_name: dashboard-cientometria
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 -t /app
