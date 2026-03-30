@@ -155,7 +155,22 @@
     </div>
 
     <div class="card">
-      <h2>Top artigos por Score100</h2>
+      <h2>Registros removidos na deduplicação</h2>
+      <p class="small">Mostrando até 1000 registros removidos por etapa.</p>
+      <div class="row">
+        <div style="flex:1; min-width:280px;">
+          <h3 style="margin:6px 0;">Removidos por DOI (<span id="doiRemovedCount">0</span>)</h3>
+          <div style="max-height:220px; overflow:auto;"><table id="doiRemovedTable"><thead><tr><th>Título</th><th>DOI</th><th>Ano</th><th>Arquivo</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div style="flex:1; min-width:280px;">
+          <h3 style="margin:6px 0;">Removidos por título (<span id="titleRemovedCount">0</span>)</h3>
+          <div style="max-height:220px; overflow:auto;"><table id="titleRemovedTable"><thead><tr><th>Título</th><th>DOI</th><th>Ano</th><th>Arquivo</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Top artigos por Score</h2>
       <div class="row">
         <label class="small">Filtrar núcleo <select id="nucleoFilter"><option value="">Todos</option><option>Núcleo A</option><option>Núcleo B</option><option>Periférico</option><option>Descarte</option></select></label>
         <label class="small">Itens por página <input id="pageSize" type="number" value="50" min="10" max="500" style="width:90px"></label>
@@ -198,6 +213,10 @@
     const prevPageBtn = document.getElementById('prevPage');
     const nextPageBtn = document.getElementById('nextPage');
     const pageInfo = document.getElementById('pageInfo');
+    const doiRemovedCount = document.getElementById('doiRemovedCount');
+    const titleRemovedCount = document.getElementById('titleRemovedCount');
+    const doiRemovedBody = document.querySelector('#doiRemovedTable tbody');
+    const titleRemovedBody = document.querySelector('#titleRemovedTable tbody');
     let chart;
     let currentRows = [];
     let currentPage = 1;
@@ -320,6 +339,22 @@
       if (data.plot_urls) {
         if (data.plot_urls.core_distribution) { plotNucleo.src = data.plot_urls.core_distribution + '?t=' + Date.now(); plotNucleo.style.display = 'block'; }
         if (data.plot_urls.score_histogram) { plotScore.src = data.plot_urls.score_histogram + '?t=' + Date.now(); plotScore.style.display = 'block'; }
+      }
+
+      const ded = data.dedup_removed || {counts:{doi_removed:0,title_removed:0},doi_removed:[],title_removed:[]};
+      doiRemovedCount.textContent = ded.counts?.doi_removed ?? 0;
+      titleRemovedCount.textContent = ded.counts?.title_removed ?? 0;
+      doiRemovedBody.innerHTML = '';
+      for (const r of (ded.doi_removed || [])) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.title || ''}</td><td>${r.doi || ''}</td><td>${r.year ?? ''}</td><td>${r.source_file || ''}</td>`;
+        doiRemovedBody.appendChild(tr);
+      }
+      titleRemovedBody.innerHTML = '';
+      for (const r of (ded.title_removed || [])) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.title || ''}</td><td>${r.doi || ''}</td><td>${r.year ?? ''}</td><td>${r.source_file || ''}</td>`;
+        titleRemovedBody.appendChild(tr);
       }
 
       tbody.innerHTML = '';

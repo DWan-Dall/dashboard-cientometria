@@ -49,7 +49,7 @@ def pick_column(df: pd.DataFrame, aliases):
     return None
 
 
-def harmonize(df: pd.DataFrame) -> pd.DataFrame:
+def harmonize(df: pd.DataFrame, source_file: str = "") -> pd.DataFrame:
     out = pd.DataFrame()
     for target, aliases in FIELD_MAP.items():
         col = pick_column(df, aliases)
@@ -66,6 +66,7 @@ def harmonize(df: pd.DataFrame) -> pd.DataFrame:
     out["title_norm"] = out["title"].map(normalize_text)
     out["blob"] = (out["title"].fillna("") + " " + out["abstract"].fillna("") + " " + out["keywords"].fillna(""))
     out["blob_norm"] = out["blob"].map(normalize_text)
+    out["source_file"] = source_file
     return out
 
 
@@ -194,18 +195,34 @@ def main():
     frames = []
     for f in files:
         df = load_file(f)
-        frames.append(harmonize(df))
+        frames.append(harmonize(df, f.name))
 
     all_df = pd.concat(frames, ignore_index=True)
     raw_records = len(all_df)
 
-    no_empty_doi = all_df[all_df["doi"].str.len() > 0]
-    empty_doi = all_df[all_df["doi"].str.len() == 0]
-    dedup_doi = pd.concat([no_empty_doi.drop_duplicates(subset=["doi"], keep="first"), empty_doi], ignore_index=True)
+    no_empty_doi = all_df[all_df["doi"].str.len() > 0].copy()
+    empty_doi = all_df[all_df["doi"].str.len() == 0].copy()
+    doi_dup_mask = no_empty_doi.duplicated(subset=["doi"], keep="first")
+    removed_doi = no_empty_doi[doi_dup_mask].copy()
+    dedup_doi = pd.concat([no_empty_doi[~doi_dup_mask], empty_doi], ignore_index=True)
     after_doi = len(dedup_doi)
 
-    dedup_title = dedup_doi.drop_duplicates(subset=["title_norm"], keep="first").copy()
+    title_dup_mask = dedup_doi.duplicated(subset=["title_norm"], keep="first")
+    removed_title = dedup_doi[title_dup_mask].copy()
+    dedup_title = dedup_doi[~title_dup_mask].copy()
     after_title = len(dedup_title)
+
+    dedup_removed = {
+        "doi_removed": [
+            {"title": r["title"], "doi": r["doi"], "year": int(r["year"]), "source_file": r.get("source_file", "")}
+            for _, r in removed_doi.head(1000).iterrows()
+        ],
+        "title_removed": [
+            {"title": r["title"], "doi": r["doi"], "year": int(r["year"]), "source_file": r.get("source_file", "")}
+            for _, r in removed_title.head(1000).iterrows()
+        ],
+        "counts": {"doi_removed": int(len(removed_doi)), "title_removed": int(len(removed_title))},
+    }
 
     thematic_mask = thematic_filter(dedup_title)
     selected = dedup_title[thematic_mask].copy()
@@ -223,6 +240,7 @@ def main():
                 "score_stats": {"mean":0,"median":0,"std":0},
             },
             "top_articles": [],
+            "dedup_removed": dedup_removed,
             "plot_urls": {"generated_with": "python"},
             "used_params": used_params,
         }
@@ -269,6 +287,7 @@ def main():
             },
         },
         "used_params": used_params,
+        "dedup_removed": dedup_removed,
         "plot_urls": {"generated_with": "python"},
         "top_articles": [
             {

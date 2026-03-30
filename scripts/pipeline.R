@@ -31,7 +31,7 @@ pick_col <- function(df, aliases) {
   NULL
 }
 
-harmonize <- function(df) {
+harmonize <- function(df, source_file = "") {
   out <- data.frame(row.names = seq_len(nrow(df)), stringsAsFactors = FALSE)
   for (target in names(field_map)) {
     col <- pick_col(df, field_map[[target]])
@@ -46,6 +46,7 @@ harmonize <- function(df) {
   out$citations <- suppressWarnings(as.numeric(out$citations)); out$citations[is.na(out$citations)] <- 0
   out$title_norm <- normalize_text(out$title)
   out$blob_norm <- normalize_text(paste(out$title, out$abstract, out$keywords))
+  out$source_file <- source_file
   out
 }
 
@@ -133,16 +134,20 @@ g <- c("satellite", "dem", "digital elevation", "remote sensing", "geospatial", 
 
 frames <- lapply(files, function(f) {
   df <- load_input(f)
-  harmonize(as.data.frame(df, stringsAsFactors = FALSE))
+  harmonize(as.data.frame(df, stringsAsFactors = FALSE), basename(f))
 })
 all_df <- do.call(rbind, frames)
 raw_records <- nrow(all_df)
 
 no_empty <- all_df[nchar(all_df$doi) > 0, ]
 empty <- all_df[nchar(all_df$doi) == 0, ]
-dedup_doi <- rbind(no_empty[!duplicated(no_empty$doi), ], empty)
+doi_dup_mask <- duplicated(no_empty$doi)
+removed_doi <- no_empty[doi_dup_mask, ]
+dedup_doi <- rbind(no_empty[!doi_dup_mask, ], empty)
 after_doi <- nrow(dedup_doi)
-dedup_title <- dedup_doi[!duplicated(dedup_doi$title_norm), ]
+title_dup_mask <- duplicated(dedup_doi$title_norm)
+removed_title <- dedup_doi[title_dup_mask, ]
+dedup_title <- dedup_doi[!title_dup_mask, ]
 after_title <- nrow(dedup_title)
 
 has_flood <- contains_any(dedup_title$blob_norm, a)
@@ -152,6 +157,18 @@ has_hg <- contains_any(dedup_title$blob_norm, h) | contains_any(dedup_title$blob
 excluded <- contains_any(dedup_title$blob_norm, ex)
 selected <- dedup_title[has_flood & has_forecast & has_ai & has_hg & !excluded, ]
 
+dedup_removed <- list(
+  doi_removed = lapply(seq_len(min(1000, nrow(removed_doi))), function(i) {
+    r <- removed_doi[i, ]
+    list(title = as.character(r$title), doi = as.character(r$doi), year = as.integer(r$year), source_file = as.character(r$source_file))
+  }),
+  title_removed = lapply(seq_len(min(1000, nrow(removed_title))), function(i) {
+    r <- removed_title[i, ]
+    list(title = as.character(r$title), doi = as.character(r$doi), year = as.integer(r$year), source_file = as.character(r$source_file))
+  }),
+  counts = list(doi_removed = nrow(removed_doi), title_removed = nrow(removed_title))
+)
+
 if (nrow(selected) == 0) {
   result <- list(summary = list(raw_records = raw_records, after_doi = after_doi, after_title = after_title, thematic_selected = 0,
                                 core_counts = list("Núcleo A" = 0, "Núcleo B" = 0, "Periférico" = 0, "Descarte" = 0),
@@ -160,7 +177,8 @@ if (nrow(selected) == 0) {
                                 score_stats = list(mean=0,median=0,std=0)),
                  top_articles = list(),
                  plot_urls = list(),
-                 used_params = used_params)
+                 used_params = used_params,
+                 dedup_removed = dedup_removed)
   cat(toJSON(result, auto_unbox = TRUE, force = TRUE, pretty = FALSE))
   quit(save = "no")
 }
@@ -218,7 +236,8 @@ result <- list(
   summary = list(raw_records = raw_records, after_doi = after_doi, after_title = after_title, thematic_selected = nrow(selected), core_counts = core_counts, t_star_distribution = t_dist, a_star_bins = a_bins, score_stats = score_stats),
   top_articles = top_articles,
   plot_urls = list(core_distribution = paste0(plot_prefix, "/", basename(core_plot)), score_histogram = paste0(plot_prefix, "/", basename(score_plot)), generated_with = "R"),
-  used_params = used_params
+  used_params = used_params,
+  dedup_removed = dedup_removed
 )
 
 cat(toJSON(result, auto_unbox = TRUE, force = TRUE, pretty = FALSE))
