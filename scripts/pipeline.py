@@ -132,9 +132,6 @@ def classify(score100):
         return "Periférico"
     return "Descarte"
 
-
-
-
 def parse_bibtex(path: Path) -> pd.DataFrame:
     text = path.read_text(encoding="utf-8", errors="ignore")
     entries = re.split(r"@\w+\s*\{", text)[1:]
