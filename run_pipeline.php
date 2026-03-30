@@ -2,7 +2,6 @@
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 
-
 function parseSizeToBytes($value) {
   $value = trim($value);
   $unit = strtolower(substr($value, -1));
