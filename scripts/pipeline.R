@@ -200,7 +200,6 @@ p2 <- ggplot(selected, aes(x = score100)) + geom_histogram(bins = 30, fill = "#0
 ggsave(score_plot, p2, width = 8, height = 4, dpi = 120)
 
 top <- selected[order(-selected$score100), c("title", "year", "citations", "doi", "nucleo", "score100")]
-top <- head(top, 50)
 
 t_dist <- list("1.0" = sum(selected$t_star == 1.0), "0.7" = sum(selected$t_star == 0.7), "0.4" = sum(selected$t_star == 0.4))
 a_bins <- list(
@@ -212,7 +211,7 @@ score_stats <- list(mean = mean(selected$score100), median = median(selected$sco
 
 top_articles <- lapply(seq_len(nrow(top)), function(i) {
   r <- top[i, ]
-  list(title = as.character(r$title), year = as.integer(r$year), citations = as.numeric(r$citations), doi = as.character(r$doi), nucleo = as.character(r$nucleo), score100 = as.numeric(r$score100))
+  list(title = as.character(r$title), year = as.integer(r$year), citations = as.numeric(r$citations), doi = as.character(r$doi), nucleo = as.character(r$nucleo), score100 = as.numeric(r$score100), c_norm = as.numeric(r$c_star), r_norm = as.numeric(r$r_star), t_score = as.numeric(r$t_star), a_score = as.numeric(r$a_star))
 })
 
 result <- list(

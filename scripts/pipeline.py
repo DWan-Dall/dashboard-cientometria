@@ -251,7 +251,7 @@ def main():
         "0.5-0.7": int(((selected["a_star"] >= 0.5) & (selected["a_star"] < 0.7)).sum()),
     }
 
-    top = selected.sort_values("score100", ascending=False).head(50)
+    top = selected.sort_values("score100", ascending=False)
 
     result = {
         "summary": {
@@ -278,6 +278,10 @@ def main():
                 "doi": r["doi"],
                 "nucleo": r["nucleo"],
                 "score100": float(r["score100"]),
+                "c_norm": float(r["c_star"]),
+                "r_norm": float(r["r_star"]),
+                "t_score": float(r["t_star"]),
+                "a_score": float(r["a_star"]),
             }
             for _, r in top.iterrows()
         ],

@@ -120,6 +120,19 @@
           <label class="small">Núcleo B >= <input id="thB" type="number" value="50" style="width:80px"></label>
           <label class="small">Periférico >= <input id="thP" type="number" value="30" style="width:80px"></label>
         </div>
+
+        <div class="row" style="margin-top:10px; border-top:1px solid #243041; padding-top:10px;">
+          <span class="small" style="font-weight:700; color:#cbd5e1;">Reconciliação metodológica (alvos)</span>
+          <label class="small">Bruto <input id="targetRaw" type="number" value="16845" style="width:90px"></label>
+          <label class="small">Após DOI <input id="targetDoi" type="number" value="12612" style="width:90px"></label>
+          <label class="small">Após título <input id="targetTitle" type="number" value="11547" style="width:90px"></label>
+          <label class="small">Temático <input id="targetThematic" type="number" value="2068" style="width:90px"></label>
+          <label class="small">A <input id="targetA" type="number" value="13" style="width:70px"></label>
+          <label class="small">B <input id="targetB" type="number" value="494" style="width:70px"></label>
+          <label class="small">P <input id="targetP" type="number" value="1508" style="width:70px"></label>
+          <label class="small">D <input id="targetD" type="number" value="53" style="width:70px"></label>
+        </div>
+        </div>
       </details>
     </div>
 
@@ -143,7 +156,14 @@
 
     <div class="card">
       <h2>Top artigos por Score100</h2>
-      <div style="overflow:auto;">
+      <div class="row">
+        <label class="small">Filtrar núcleo <select id="nucleoFilter"><option value="">Todos</option><option>Núcleo A</option><option>Núcleo B</option><option>Periférico</option><option>Descarte</option></select></label>
+        <label class="small">Itens por página <input id="pageSize" type="number" value="50" min="10" max="500" style="width:90px"></label>
+        <button id="prevPage" class="btn" type="button">Anterior</button>
+        <button id="nextPage" class="btn" type="button">Próxima</button>
+        <span id="pageInfo" class="small"></span>
+      </div>
+      <div style="overflow:auto; margin-top:8px;">
         <table id="topTable">
           <thead>
             <tr>
@@ -152,7 +172,7 @@
               <th>Citações</th>
               <th>DOI</th>
               <th>Núcleo</th>
-              <th>Score100</th>
+              <th>C*</th><th>R*</th><th>T*</th><th>A*</th><th>Score100</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -173,7 +193,14 @@
     const plotNucleo = document.getElementById('plotNucleo');
     const plotScore = document.getElementById('plotScore');
     const paramsView = document.getElementById('paramsView');
+    const nucleoFilter = document.getElementById('nucleoFilter');
+    const pageSizeInput = document.getElementById('pageSize');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const pageInfo = document.getElementById('pageInfo');
     let chart;
+    let currentRows = [];
+    let currentPage = 1;
 
     function setStatus(msg) { statusEl.textContent = msg; }
 
@@ -257,11 +284,23 @@
 
       const labels = Object.keys(cc);
       const values = labels.map(k => cc[k]);
+      const targets = getTargets();
+      const recon = {
+        bruto_delta: (s.raw_records ?? 0) - targets.raw,
+        apos_doi_delta: (s.after_doi ?? 0) - targets.doi,
+        apos_titulo_delta: (s.after_title ?? 0) - targets.title,
+        tematico_delta: (s.thematic_selected ?? 0) - targets.thematic,
+        nucleo_a_delta: (cc['Núcleo A'] ?? 0) - targets.a,
+        nucleo_b_delta: (cc['Núcleo B'] ?? 0) - targets.b,
+        periferico_delta: (cc['Periférico'] ?? 0) - targets.p,
+        descarte_delta: (cc['Descarte'] ?? 0) - targets.d
+      };
       paramsView.textContent = [
         data.used_params ? ('Parâmetros usados: ' + JSON.stringify(data.used_params, null, 2)) : '',
         s.t_star_distribution ? ('Distribuição T*: ' + JSON.stringify(s.t_star_distribution)) : '',
         s.a_star_bins ? ('Faixas A*: ' + JSON.stringify(s.a_star_bins)) : '',
-        s.score_stats ? ('Score100 stats: ' + JSON.stringify(s.score_stats)) : ''
+        s.score_stats ? ('Score100 stats: ' + JSON.stringify(s.score_stats)) : '',
+        'Reconciliação (delta atual - alvo): ' + JSON.stringify(recon, null, 2)
       ].filter(Boolean).join('\n');
       if (chart) chart.destroy();
       chart = new Chart(document.getElementById('nucleoChart'), {
@@ -284,8 +323,35 @@
       }
 
       tbody.innerHTML = '';
-      const rows = Array.isArray(data.top_articles) ? data.top_articles : [];
-      for (const r of rows) {
+      currentRows = Array.isArray(data.top_articles) ? data.top_articles : [];
+      currentPage = 1;
+      renderTable();
+    }
+
+    function getTargets() {
+      return {
+        raw: Number(document.getElementById('targetRaw').value || 0),
+        doi: Number(document.getElementById('targetDoi').value || 0),
+        title: Number(document.getElementById('targetTitle').value || 0),
+        thematic: Number(document.getElementById('targetThematic').value || 0),
+        a: Number(document.getElementById('targetA').value || 0),
+        b: Number(document.getElementById('targetB').value || 0),
+        p: Number(document.getElementById('targetP').value || 0),
+        d: Number(document.getElementById('targetD').value || 0),
+      };
+    }
+
+    function renderTable() {
+      const filter = nucleoFilter.value;
+      const filtered = currentRows.filter(r => !filter || r.nucleo === filter);
+      const size = Math.max(10, Number(pageSizeInput.value || 50));
+      const totalPages = Math.max(1, Math.ceil(filtered.length / size));
+      currentPage = Math.min(currentPage, totalPages);
+      const start = (currentPage - 1) * size;
+      const pageRows = filtered.slice(start, start + size);
+
+      tbody.innerHTML = '';
+      for (const r of pageRows) {
         const tr = document.createElement('tr');
         const cls = r.nucleo === 'Núcleo A' ? 'nA' : r.nucleo === 'Núcleo B' ? 'nB' : r.nucleo === 'Periférico' ? 'nP' : 'nD';
         tr.innerHTML = `
@@ -294,11 +360,22 @@
           <td>${r.citations ?? ''}</td>
           <td>${r.doi || ''}</td>
           <td><span class="tag ${cls}">${r.nucleo}</span></td>
+          <td>${Number(r.c_norm ?? 0).toFixed(3)}</td>
+          <td>${Number(r.r_norm ?? 0).toFixed(3)}</td>
+          <td>${Number(r.t_score ?? 0).toFixed(3)}</td>
+          <td>${Number(r.a_score ?? 0).toFixed(3)}</td>
           <td>${Number(r.score100).toFixed(2)}</td>
         `;
         tbody.appendChild(tr);
       }
+      pageInfo.textContent = `Página ${currentPage}/${totalPages} • ${filtered.length} artigo(s) filtrado(s)`;
     }
+
+    nucleoFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
+    pageSizeInput.addEventListener('change', () => { currentPage = 1; renderTable(); });
+    prevPageBtn.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); renderTable(); });
+    nextPageBtn.addEventListener('click', () => { currentPage += 1; renderTable(); });
+
   </script>
 </body>
 </html>
