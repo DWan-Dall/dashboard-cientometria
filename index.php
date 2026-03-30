@@ -257,7 +257,12 @@
 
       const labels = Object.keys(cc);
       const values = labels.map(k => cc[k]);
-      paramsView.textContent = data.used_params ? ('Parâmetros usados: ' + JSON.stringify(data.used_params, null, 2)) : ''; 
+      paramsView.textContent = [
+        data.used_params ? ('Parâmetros usados: ' + JSON.stringify(data.used_params, null, 2)) : '',
+        s.t_star_distribution ? ('Distribuição T*: ' + JSON.stringify(s.t_star_distribution)) : '',
+        s.a_star_bins ? ('Faixas A*: ' + JSON.stringify(s.a_star_bins)) : '',
+        s.score_stats ? ('Score100 stats: ' + JSON.stringify(s.score_stats)) : ''
+      ].filter(Boolean).join('\n');
       if (chart) chart.destroy();
       chart = new Chart(document.getElementById('nucleoChart'), {
         type: 'bar',

@@ -154,7 +154,10 @@ selected <- dedup_title[has_flood & has_forecast & has_ai & has_hg & !excluded, 
 
 if (nrow(selected) == 0) {
   result <- list(summary = list(raw_records = raw_records, after_doi = after_doi, after_title = after_title, thematic_selected = 0,
-                                core_counts = list("Núcleo A" = 0, "Núcleo B" = 0, "Periférico" = 0, "Descarte" = 0)),
+                                core_counts = list("Núcleo A" = 0, "Núcleo B" = 0, "Periférico" = 0, "Descarte" = 0),
+                                t_star_distribution = list("1.0"=0,"0.7"=0,"0.4"=0),
+                                a_star_bins = list(">=0.9"=0,"0.7-0.9"=0,"0.5-0.7"=0),
+                                score_stats = list(mean=0,median=0,std=0)),
                  top_articles = list(),
                  plot_urls = list(),
                  used_params = used_params)
@@ -167,7 +170,11 @@ cmax <- ifelse(is.null(params$c_max), max(selected$citations, na.rm = TRUE), as.
 if (cmax == cmin) { selected$c_star <- rep(1, nrow(selected)) } else { selected$c_star <- pmax(0, pmin(1, (selected$citations - cmin)/(cmax-cmin))) }
 if (used_params$year_max == used_params$year_min) { selected$r_star <- rep(1, nrow(selected)) } else { selected$r_star <- pmax(0, pmin(1, (selected$year - used_params$year_min)/(used_params$year_max-used_params$year_min))) }
 
-selected$t_star <- ifelse(contains_any(normalize_text(selected$title), a) & contains_any(normalize_text(selected$title), b) & contains_any(normalize_text(selected$title), c), 1.0, 0.7)
+combo <- function(txt) contains_any(txt, a) & contains_any(txt, b) & contains_any(txt, c)
+title_combo <- combo(normalize_text(selected$title))
+abstract_combo <- combo(normalize_text(selected$abstract))
+keyword_combo <- combo(normalize_text(selected$keywords))
+selected$t_star <- ifelse(title_combo | abstract_combo, 1.0, ifelse(keyword_combo | abstract_combo, 0.7, 0.4))
 selected$a_star <- pmax(0.5, pmin(1.0, (ifelse(contains_any(selected$blob_norm, h) & contains_any(selected$blob_norm, g), 1, 0.5) +
   ifelse(contains_any(selected$blob_norm, c), 1, 0.5) +
   ifelse(contains_any(selected$blob_norm, b), 1, 0.5) +
@@ -195,13 +202,21 @@ ggsave(score_plot, p2, width = 8, height = 4, dpi = 120)
 top <- selected[order(-selected$score100), c("title", "year", "citations", "doi", "nucleo", "score100")]
 top <- head(top, 50)
 
+t_dist <- list("1.0" = sum(selected$t_star == 1.0), "0.7" = sum(selected$t_star == 0.7), "0.4" = sum(selected$t_star == 0.4))
+a_bins <- list(
+  ">=0.9" = sum(selected$a_star >= 0.9),
+  "0.7-0.9" = sum(selected$a_star >= 0.7 & selected$a_star < 0.9),
+  "0.5-0.7" = sum(selected$a_star >= 0.5 & selected$a_star < 0.7)
+)
+score_stats <- list(mean = mean(selected$score100), median = median(selected$score100), std = sd(selected$score100))
+
 top_articles <- lapply(seq_len(nrow(top)), function(i) {
   r <- top[i, ]
   list(title = as.character(r$title), year = as.integer(r$year), citations = as.numeric(r$citations), doi = as.character(r$doi), nucleo = as.character(r$nucleo), score100 = as.numeric(r$score100))
 })
 
 result <- list(
-  summary = list(raw_records = raw_records, after_doi = after_doi, after_title = after_title, thematic_selected = nrow(selected), core_counts = core_counts),
+  summary = list(raw_records = raw_records, after_doi = after_doi, after_title = after_title, thematic_selected = nrow(selected), core_counts = core_counts, t_star_distribution = t_dist, a_star_bins = a_bins, score_stats = score_stats),
   top_articles = top_articles,
   plot_urls = list(core_distribution = paste0(plot_prefix, "/", basename(core_plot)), score_histogram = paste0(plot_prefix, "/", basename(score_plot)), generated_with = "R"),
   used_params = used_params

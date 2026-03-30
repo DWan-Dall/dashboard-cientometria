@@ -99,17 +99,16 @@ def score_t(row):
     a = normalize_text(row["abstract"])
     k = normalize_text(row["keywords"])
 
-    flood_pred = contains_any(t, FLOOD_TERMS) and contains_any(t, FORECAST_TERMS)
-    ai_title = contains_any(t, AI_TERMS)
-    if flood_pred and ai_title:
+    def combo(txt: str) -> bool:
+        return contains_any(txt, FLOOD_TERMS) and contains_any(txt, FORECAST_TERMS) and contains_any(txt, AI_TERMS)
+
+    if combo(t) or combo(a):
         return 1.0
-
-    flood_pred_ra = (contains_any(a, FLOOD_TERMS) and contains_any(a, FORECAST_TERMS)) or (contains_any(k, FLOOD_TERMS) and contains_any(k, FORECAST_TERMS))
-    ai_ra = contains_any(a, AI_TERMS) or contains_any(k, AI_TERMS)
-    if flood_pred_ra and ai_ra:
+    if combo(k) or combo(a):
         return 0.7
-    return 0.4
 
+    has_any_topic = contains_any(t + " " + a + " " + k, FLOOD_TERMS + FORECAST_TERMS + AI_TERMS)
+    return 0.4 if has_any_topic else 0.4
 
 def score_a(row):
     txt = row["blob_norm"]
@@ -219,6 +218,9 @@ def main():
                 "after_title": int(after_title),
                 "thematic_selected": 0,
                 "core_counts": {"Núcleo A": 0, "Núcleo B": 0, "Periférico": 0, "Descarte": 0},
+                "t_star_distribution": {"1.0":0,"0.7":0,"0.4":0},
+                "a_star_bins": {">=0.9":0,"0.7-0.9":0,"0.5-0.7":0},
+                "score_stats": {"mean":0,"median":0,"std":0},
             },
             "top_articles": [],
             "plot_urls": {"generated_with": "python"},
@@ -242,6 +244,13 @@ def main():
     for c in ["Núcleo A", "Núcleo B", "Periférico", "Descarte"]:
         core_counts.setdefault(c, 0)
 
+    t_dist = {"1.0": int((selected["t_star"] == 1.0).sum()), "0.7": int((selected["t_star"] == 0.7).sum()), "0.4": int((selected["t_star"] == 0.4).sum())}
+    a_bins = {
+        ">=0.9": int((selected["a_star"] >= 0.9).sum()),
+        "0.7-0.9": int(((selected["a_star"] >= 0.7) & (selected["a_star"] < 0.9)).sum()),
+        "0.5-0.7": int(((selected["a_star"] >= 0.5) & (selected["a_star"] < 0.7)).sum()),
+    }
+
     top = selected.sort_values("score100", ascending=False).head(50)
 
     result = {
@@ -251,6 +260,13 @@ def main():
             "after_title": int(after_title),
             "thematic_selected": int(len(selected)),
             "core_counts": core_counts,
+            "t_star_distribution": t_dist,
+            "a_star_bins": a_bins,
+            "score_stats": {
+                "mean": float(selected["score100"].mean()),
+                "median": float(selected["score100"].median()),
+                "std": float(selected["score100"].std(ddof=0)),
+            },
         },
         "used_params": used_params,
         "plot_urls": {"generated_with": "python"},
