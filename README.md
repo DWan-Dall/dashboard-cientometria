@@ -28,8 +28,10 @@ Dashboard interativo (PHP + Python) para apoiar revisões sistemáticas com foco
 - `index.php`: interface web interativa.
 - `run_pipeline.php`: endpoint de upload e execução do pipeline.
 - `scripts/pipeline.py`: pipeline de normalização, deduplicação, filtragem e scoring.
+- `Dockerfile`: imagem única com PHP + Python.
+- `docker-compose.yml`: execução local com container.
 
-## Como executar
+## Como executar (local)
 
 Pré-requisitos:
 
@@ -40,13 +42,37 @@ Pré-requisitos:
 Instalação de dependências Python:
 
 ```bash
-pip install pandas openpyxl
+pip install -r requirements.txt
 ```
 
 Iniciar aplicação:
 
 ```bash
 php -S localhost:8000
+```
+
+Acesse:
+
+- http://localhost:8000
+
+## Como executar com Docker
+
+Build da imagem:
+
+```bash
+docker build -t dashboard-cientometria .
+```
+
+Executar container:
+
+```bash
+docker run --rm -p 8000:8000 dashboard-cientometria
+```
+
+Ou com Docker Compose:
+
+```bash
+docker compose up --build
 ```
 
 Acesse:
