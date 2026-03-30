@@ -32,7 +32,7 @@ pick_col <- function(df, aliases) {
 }
 
 harmonize <- function(df) {
-  out <- data.frame(stringsAsFactors = FALSE)
+  out <- data.frame(row.names = seq_len(nrow(df)), stringsAsFactors = FALSE)
   for (target in names(field_map)) {
     col <- pick_col(df, field_map[[target]])
     out[[target]] <- if (!is.null(col)) df[[col]] else ""
