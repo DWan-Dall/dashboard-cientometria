@@ -189,7 +189,13 @@
       fd.append('engine', engineSelect.value);
       try {
         const res = await fetch('run_pipeline.php', { method: 'POST', body: fd });
-        const data = await res.json();
+        const raw = await res.text();
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch (_) {
+          throw new Error(`Resposta inválida do servidor (não-JSON): ${raw.slice(0, 180)}`);
+        }
         if (!res.ok || data.error) throw new Error(data.error || 'Falha ao processar arquivos.');
         render(data);
         setStatus('Concluído.');
