@@ -170,7 +170,7 @@
     </div>
 
     <div class="card">
-      <h2>Top artigos por Score100</h2>
+      <h2>Top artigos por Score</h2>
       <div class="row">
         <label class="small">Filtrar núcleo <select id="nucleoFilter"><option value="">Todos</option><option>Núcleo A</option><option>Núcleo B</option><option>Periférico</option><option>Descarte</option></select></label>
         <label class="small">Itens por página <input id="pageSize" type="number" value="50" min="10" max="500" style="width:90px"></label>
