@@ -86,7 +86,6 @@ def harmonize(df: pd.DataFrame, source_file: str = "") -> pd.DataFrame:
 def contains_any(text: str, terms):
     return any(t in text for t in terms)
 
-
 def thematic_filter(df: pd.DataFrame, terms: dict) -> pd.Series:
     blob = df["blob_norm"]
     has_topic1 = blob.apply(lambda t: contains_any(t, terms["topic1"]))
@@ -96,15 +95,11 @@ def thematic_filter(df: pd.DataFrame, terms: dict) -> pd.Series:
     excluded = blob.apply(lambda t: contains_any(t, terms["exclude"]))
     return has_topic1 & has_topic2 & has_method & has_inputs & (~excluded)
 
-
 def minmax(series: pd.Series):
     smin, smax = series.min(), series.max()
     if smax == smin:
         return pd.Series([1.0] * len(series), index=series.index)
     return (series - smin) / (smax - smin)
-
-
-
 
 def clamp_norm(series: pd.Series, vmin: float, vmax: float):
     if vmax == vmin:
@@ -124,7 +119,6 @@ def score_t(row, terms):
     if combo(k) or combo(a):
         return 0.7
     return 0.4
-
 
 def score_a(row, terms):
     txt = row["blob_norm"]
@@ -150,9 +144,6 @@ def classify(score100, thresholds):
     if score100 >= thresholds["periferico"]:
         return "Periférico"
     return "Descarte"
-
-
-
 
 def parse_bibtex(path: Path) -> pd.DataFrame:
     text = path.read_text(encoding="utf-8", errors="ignore")

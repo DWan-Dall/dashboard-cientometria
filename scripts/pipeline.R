@@ -127,7 +127,6 @@ used_params <- list(
   terms = list()
 )
 
-
 a <- if (!is.null(term_params$topic1) && length(term_params$topic1)>0) normalize_text(unlist(term_params$topic1)) else c("flood", "inundacao", "inundação", "enchente", "flooding", "inundation")
 b <- if (!is.null(term_params$topic2) && length(term_params$topic2)>0) normalize_text(unlist(term_params$topic2)) else c("forecast", "forecasting", "prediction", "previsao", "previsão", "early warning")
 c <- if (!is.null(term_params$method) && length(term_params$method)>0) normalize_text(unlist(term_params$method)) else c("machine learning", "deep learning", "artificial intelligence", "neural network", "xgboost", "svm", "random forest", "cnn", "rnn", "lstm")
