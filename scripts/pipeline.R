@@ -109,6 +109,7 @@ params <- payload$params
 if (is.null(params)) params <- list()
 weights <- params$weights; if (is.null(weights)) weights <- list()
 thresholds <- params$thresholds; if (is.null(thresholds)) thresholds <- list()
+term_params <- params$terms; if (is.null(term_params)) term_params <- list()
 used_params <- list(
   weights = list(
     c = as.numeric(ifelse(is.null(weights$c), 0.35, weights$c)),
@@ -122,15 +123,17 @@ used_params <- list(
     nucleo_a = as.numeric(ifelse(is.null(thresholds$nucleo_a), 70, thresholds$nucleo_a)),
     nucleo_b = as.numeric(ifelse(is.null(thresholds$nucleo_b), 50, thresholds$nucleo_b)),
     periferico = as.numeric(ifelse(is.null(thresholds$periferico), 30, thresholds$periferico))
-  )
+  ),
+  terms = list()
 )
 
-a <- c("flood", "inundacao", "inundação", "enchente", "flooding", "inundation")
-b <- c("forecast", "forecasting", "prediction", "previsao", "previsão", "early warning")
-c <- c("machine learning", "deep learning", "artificial intelligence", "neural network", "xgboost", "svm", "random forest", "cnn", "rnn", "lstm")
-ex <- c("flood insurance", "flood mythology", "flood psychology")
-h <- c("rain", "rainfall", "chuva", "streamflow", "vazao", "vazão", "water level", "hydrolog")
-g <- c("satellite", "dem", "digital elevation", "remote sensing", "geospatial", "gis")
+a <- if (!is.null(term_params$topic1) && length(term_params$topic1)>0) normalize_text(unlist(term_params$topic1)) else c("flood", "inundacao", "inundação", "enchente", "flooding", "inundation")
+b <- if (!is.null(term_params$topic2) && length(term_params$topic2)>0) normalize_text(unlist(term_params$topic2)) else c("forecast", "forecasting", "prediction", "previsao", "previsão", "early warning")
+c <- if (!is.null(term_params$method) && length(term_params$method)>0) normalize_text(unlist(term_params$method)) else c("machine learning", "deep learning", "artificial intelligence", "neural network", "xgboost", "svm", "random forest", "cnn", "rnn", "lstm")
+ex <- if (!is.null(term_params$exclude) && length(term_params$exclude)>0) normalize_text(unlist(term_params$exclude)) else c("flood insurance", "flood mythology", "flood psychology")
+h <- if (!is.null(term_params$input_a) && length(term_params$input_a)>0) normalize_text(unlist(term_params$input_a)) else c("rain", "rainfall", "chuva", "streamflow", "vazao", "vazão", "water level", "hydrolog")
+g <- if (!is.null(term_params$input_b) && length(term_params$input_b)>0) normalize_text(unlist(term_params$input_b)) else c("satellite", "dem", "digital elevation", "remote sensing", "geospatial", "gis")
+used_params$terms <- list(topic1 = as.list(a), topic2 = as.list(b), method = as.list(c), exclude = as.list(ex), input_a = as.list(h), input_b = as.list(g))
 
 frames <- lapply(files, function(f) {
   df <- load_input(f)
