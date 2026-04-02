@@ -28,6 +28,19 @@ OUTPUT_STRONG = ["prediction", "forecast", "early warning", "mapping"]
 OUTPUT_MED = ["model", "risk assessment", "susceptibility"]
 CONTEXT_STRONG = ["urban", "coastal", "river", "city", "basin", "watershed"]
 
+DEFAULT_TERMS = {
+    "topic1": FLOOD_TERMS,
+    "topic2": FORECAST_TERMS,
+    "method": AI_TERMS,
+    "exclude": EXCLUDE_TERMS,
+    "input_a": HYDRO_TERMS,
+    "input_b": GEO_TERMS,
+    "method_strong": METHOD_STRONG,
+    "output_strong": OUTPUT_STRONG,
+    "output_med": OUTPUT_MED,
+    "context_strong": CONTEXT_STRONG,
+}
+
 
 def normalize_text(value: str) -> str:
     if value is None:
@@ -73,16 +86,14 @@ def harmonize(df: pd.DataFrame, source_file: str = "") -> pd.DataFrame:
 def contains_any(text: str, terms):
     return any(t in text for t in terms)
 
-
-def thematic_filter(df: pd.DataFrame) -> pd.Series:
+def thematic_filter(df: pd.DataFrame, terms: dict) -> pd.Series:
     blob = df["blob_norm"]
-    has_flood = blob.apply(lambda t: contains_any(t, FLOOD_TERMS))
-    has_forecast = blob.apply(lambda t: contains_any(t, FORECAST_TERMS))
-    has_ai = blob.apply(lambda t: contains_any(t, AI_TERMS))
-    has_hydro_or_geo = blob.apply(lambda t: contains_any(t, HYDRO_TERMS) or contains_any(t, GEO_TERMS))
-    excluded = blob.apply(lambda t: contains_any(t, EXCLUDE_TERMS))
-    return has_flood & has_forecast & has_ai & has_hydro_or_geo & (~excluded)
-
+    has_topic1 = blob.apply(lambda t: contains_any(t, terms["topic1"]))
+    has_topic2 = blob.apply(lambda t: contains_any(t, terms["topic2"]))
+    has_method = blob.apply(lambda t: contains_any(t, terms["method"]))
+    has_inputs = blob.apply(lambda t: contains_any(t, terms["input_a"]) or contains_any(t, terms["input_b"]))
+    excluded = blob.apply(lambda t: contains_any(t, terms["exclude"]))
+    return has_topic1 & has_topic2 & has_method & has_inputs & (~excluded)
 
 def minmax(series: pd.Series):
     smin, smax = series.min(), series.max()
@@ -95,36 +106,35 @@ def clamp_norm(series: pd.Series, vmin: float, vmax: float):
         return pd.Series([1.0] * len(series), index=series.index)
     return ((series - vmin) / (vmax - vmin)).clip(lower=0, upper=1)
 
-def score_t(row):
+def score_t(row, terms):
     t = normalize_text(row["title"])
     a = normalize_text(row["abstract"])
     k = normalize_text(row["keywords"])
 
     def combo(txt: str) -> bool:
-        return contains_any(txt, FLOOD_TERMS) and contains_any(txt, FORECAST_TERMS) and contains_any(txt, AI_TERMS)
+        return contains_any(txt, terms["topic1"]) and contains_any(txt, terms["topic2"]) and contains_any(txt, terms["method"])
 
     if combo(t) or combo(a):
         return 1.0
     if combo(k) or combo(a):
         return 0.7
+    return 0.4
 
-    has_any_topic = contains_any(t + " " + a + " " + k, FLOOD_TERMS + FORECAST_TERMS + AI_TERMS)
-    return 0.4 if has_any_topic else 0.4
-
-def score_a(row):
+def score_a(row, terms):
     txt = row["blob_norm"]
-    has_hydro = contains_any(txt, HYDRO_TERMS)
-    has_geo = contains_any(txt, GEO_TERMS)
+    has_hydro = contains_any(txt, terms["input_a"])
+    has_geo = contains_any(txt, terms["input_b"])
     I = 1.0 if (has_hydro and has_geo) else (0.5 if has_hydro or has_geo else 0.0)
 
-    strong_method = contains_any(txt, METHOD_STRONG)
-    generic_ml = "machine learning" in txt or "deep learning" in txt or "artificial intelligence" in txt
+    strong_method = contains_any(txt, terms["method_strong"])
+    generic_ml = contains_any(txt, terms["method"])
     M = 1.0 if strong_method else (0.5 if generic_ml else 0.0)
 
-    O = 1.0 if contains_any(txt, OUTPUT_STRONG) else (0.5 if contains_any(txt, OUTPUT_MED) else 0.0)
-    C = 1.0 if contains_any(txt, CONTEXT_STRONG) else (0.5 if "flood" in txt or "hydrolog" in txt else 0.0)
+    O = 1.0 if contains_any(txt, terms["output_strong"]) else (0.5 if contains_any(txt, terms["output_med"]) else 0.0)
+    C = 1.0 if contains_any(txt, terms["context_strong"]) else (0.5 if contains_any(txt, terms["topic1"]) else 0.0)
 
     return (I + M + O + C) / 4.0
+
 
 def classify(score100, thresholds):
     if score100 >= thresholds["nucleo_a"]:
@@ -164,6 +174,7 @@ def load_file(path: Path) -> pd.DataFrame:
         return parse_bibtex(path)
     raise ValueError(f"Formato não suportado: {path.name}")
 
+
 def main():
     if len(sys.argv) < 2:
         raise SystemExit("Uso: pipeline.py <payload.json>")
@@ -174,6 +185,12 @@ def main():
     params = payload.get("params", {}) or {}
     weights = params.get("weights", {}) if isinstance(params.get("weights", {}), dict) else {}
     thresholds = params.get("thresholds", {}) if isinstance(params.get("thresholds", {}), dict) else {}
+    term_params = params.get("terms", {}) if isinstance(params.get("terms", {}), dict) else {}
+    terms = {}
+    for k, v in DEFAULT_TERMS.items():
+        custom = term_params.get(k)
+        terms[k] = [normalize_text(x) for x in custom if str(x).strip()] if isinstance(custom, list) and len(custom) > 0 else [normalize_text(x) for x in v]
+
     used_params = {
         "weights": {
             "c": float(weights.get("c", 0.35)),
@@ -188,7 +205,9 @@ def main():
             "nucleo_b": float(thresholds.get("nucleo_b", 50)),
             "periferico": float(thresholds.get("periferico", 30)),
         },
+        "terms": {k: terms[k] for k in ["topic1","topic2","method","exclude","input_a","input_b"]},
     }
+
     if not files:
         raise SystemExit("Nenhum arquivo recebido")
 
@@ -224,7 +243,7 @@ def main():
         "counts": {"doi_removed": int(len(removed_doi)), "title_removed": int(len(removed_title))},
     }
 
-    thematic_mask = thematic_filter(dedup_title)
+    thematic_mask = thematic_filter(dedup_title, terms)
     selected = dedup_title[thematic_mask].copy()
 
     if len(selected) == 0:
@@ -251,8 +270,8 @@ def main():
     cmax = params.get("c_max", float(selected["citations"].max()))
     selected["c_star"] = clamp_norm(selected["citations"], float(cmin), float(cmax))
     selected["r_star"] = clamp_norm(selected["year"], used_params["year_min"], used_params["year_max"])
-    selected["t_star"] = selected.apply(score_t, axis=1)
-    selected["a_star"] = selected.apply(score_a, axis=1)
+    selected["t_star"] = selected.apply(score_t, axis=1, args=(terms,))
+    selected["a_star"] = selected.apply(score_a, axis=1, args=(terms,))
     w = used_params["weights"]
     selected["score"] = w["c"] * selected["c_star"] + w["r"] * selected["r_star"] + w["t"] * selected["t_star"] + w["a"] * selected["a_star"]
     selected["score100"] = minmax(selected["score"]) * 100
