@@ -2,6 +2,7 @@
 ?>
 <!doctype html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,36 +18,63 @@
       --bad: #ef4444;
       --accent: #38bdf8;
     }
+
     body {
       margin: 0;
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       background: linear-gradient(180deg, #020617, #0f172a);
       color: var(--text);
     }
+
     .container {
       max-width: 1200px;
       margin: 24px auto;
       padding: 0 16px 64px;
     }
+
     .card {
-      background: rgba(17,24,39,0.9);
+      background: rgba(17, 24, 39, 0.9);
       border: 1px solid #1f2937;
       border-radius: 16px;
       padding: 16px;
       margin-bottom: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       margin: 2%;
     }
-    h1, h2 { margin: 8px 0 14px; }
-    p { color: var(--muted); }
+
+    h1,
+    h2 {
+      margin: 8px 0 14px;
+    }
+
+    p {
+      color: var(--muted);
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
     }
-    .kpi { padding: 12px; border-radius: 12px; background: #0b1220; border: 1px solid #243041; }
-    .kpi .label { color: var(--muted); font-size: 13px; }
-    .kpi .value { font-size: 30px; font-weight: 700; margin-top: 4px; }
+
+    .kpi {
+      padding: 12px;
+      border-radius: 12px;
+      background: #0b1220;
+      border: 1px solid #243041;
+    }
+
+    .kpi .label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .kpi .value {
+      font-size: 30px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
     .dropzone {
       border: 2px dashed #334155;
       border-radius: 14px;
@@ -55,7 +83,11 @@
       color: var(--muted);
       transition: border-color .2s;
     }
-    .dropzone.drag { border-color: var(--accent); }
+
+    .dropzone.drag {
+      border-color: var(--accent);
+    }
+
     .btn {
       background: #0ea5e9;
       color: #06202d;
@@ -65,30 +97,81 @@
       padding: 10px 14px;
       cursor: pointer;
     }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
+
+    .btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
-    th, td {
+
+    th,
+    td {
       border-bottom: 1px solid #263244;
       padding: 8px;
       text-align: left;
       vertical-align: top;
     }
-    th { color: #cbd5e1; }
-    .tag { padding:3px 8px; border-radius:999px; font-size:12px; font-weight:700; }
-    .nA { background: rgba(34,197,94,.15); color: #86efac; }
-    .nB { background: rgba(56,189,248,.15); color: #7dd3fc; }
-    .nP { background: rgba(245,158,11,.15); color: #fcd34d; }
-    .nD { background: rgba(239,68,68,.15); color: #fca5a5; }
-    .small { font-size: 12px; color: var(--muted); }
-    canvas { max-height: 320px; }
-    @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+    th {
+      color: #cbd5e1;
+    }
+
+    .tag {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .nA {
+      background: rgba(34, 197, 94, .15);
+      color: #86efac;
+    }
+
+    .nB {
+      background: rgba(56, 189, 248, .15);
+      color: #7dd3fc;
+    }
+
+    .nP {
+      background: rgba(245, 158, 11, .15);
+      color: #fcd34d;
+    }
+
+    .nD {
+      background: rgba(239, 68, 68, .15);
+      color: #fca5a5;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    canvas {
+      max-height: 320px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="card">
@@ -98,16 +181,7 @@
         <input id="fileInput" type="file" multiple accept=".csv,.xlsx,.bib,.tsv,.txt" />
         <div>Arraste arquivos aqui ou selecione no campo acima.</div>
       </div>
-      <div class="row" style="margin-top:12px;">
-        <label class="small">Motor:
-          <select id="engineSelect">
-            <option value="python">Python</option>
-            <option value="r">R</option>
-          </select>
-        </label>
-        <button id="runBtn" class="btn" disabled>Processar planilhas</button>
-        <span id="status" class="small">Nenhum arquivo selecionado.</span>
-      </div>
+
       <details style="margin-top:10px;">
         <summary style="cursor:pointer; color:#cbd5e1;">Parâmetros de cálculo (editáveis)</summary>
         <div class="row" style="margin-top:10px;">
@@ -143,68 +217,113 @@
           <label class="small">P <input id="targetP" type="number" value="1508" style="width:70px"></label>
           <label class="small">D <input id="targetD" type="number" value="53" style="width:70px"></label>
         </div>
-        </div>
+
       </details>
-    </div>
-
-    <div class="card">
-      <h2>Resumo do pipeline</h2>
-      <div class="grid" id="kpis"></div><pre id="paramsView" class="small" style="white-space:pre-wrap; margin-top:10px;"></pre>
-    </div>
-
-    <div class="card">
-      <h2>Distribuição por núcleo</h2>
-      <canvas id="nucleoChart"></canvas>
-    </div>
-
-    <div class="card">
-      <h2>Gráficos gerados pelo pipeline</h2>
-      <div class="row">
-        <img id="plotNucleo" alt="Distribuição por núcleo (R)" style="max-width:48%; border-radius:10px; display:none;"/>
-        <img id="plotScore" alt="Histograma de score (R)" style="max-width:48%; border-radius:10px; display:none;"/>
+      <div class="row" style="margin-top:26px;">
+        <label class="small">Motor:
+          <select id="engineSelect">
+            <option value="python">Python</option>
+            <option value="r">R</option>
+          </select>
+        </label>
+        <button id="runBtn" class="btn" disabled>Processar planilhas</button>
+        <span id="status" class="small">Nenhum arquivo selecionado.</span>
       </div>
     </div>
+  </div>
+  <div class="card">
+    <h2>Resumo do pipeline</h2>
+    <div class="grid" id="kpis"></div>
+    <pre id="paramsView" class="small" style="white-space:pre-wrap; margin-top:10px;"></pre>
+  </div>
 
-    <div class="card">
-      <h2>Registros removidos na deduplicação</h2>
-      <p class="small">Mostrando até 1000 registros removidos por etapa.</p>
-      <div class="row">
-        <div style="flex:1; min-width:280px;">
-          <h3 style="margin:6px 0;">Removidos por DOI (<span id="doiRemovedCount">0</span>)</h3>
-          <div style="max-height:220px; overflow:auto;"><table id="doiRemovedTable"><thead><tr><th>Título</th><th>DOI</th><th>Ano</th><th>Arquivo</th></tr></thead><tbody></tbody></table></div>
+  <div class="card">
+    <h2>Distribuição por núcleo</h2>
+    <canvas id="nucleoChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>Gráficos gerados pelo pipeline</h2>
+    <div class="row">
+      <img id="plotNucleo" alt="Distribuição por núcleo (R)" style="max-width:48%; border-radius:10px; display:none;" />
+      <img id="plotScore" alt="Histograma de score (R)" style="max-width:48%; border-radius:10px; display:none;" />
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Registros removidos na deduplicação</h2>
+    <p class="small">Mostrando até 1000 registros removidos por etapa.</p>
+    <div class="row">
+      <div style="flex:1; min-width:280px;">
+        <h3 style="margin:6px 0;">Removidos por DOI (<span id="doiRemovedCount">0</span>)</h3>
+        <div style="max-height:220px; overflow:auto;">
+          <table id="doiRemovedTable">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>DOI</th>
+                <th>Ano</th>
+                <th>Arquivo</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
-        <div style="flex:1; min-width:280px;">
-          <h3 style="margin:6px 0;">Removidos por título (<span id="titleRemovedCount">0</span>)</h3>
-          <div style="max-height:220px; overflow:auto;"><table id="titleRemovedTable"><thead><tr><th>Título</th><th>DOI</th><th>Ano</th><th>Arquivo</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div style="flex:1; min-width:280px;">
+        <h3 style="margin:6px 0;">Removidos por título (<span id="titleRemovedCount">0</span>)</h3>
+        <div style="max-height:220px; overflow:auto;">
+          <table id="titleRemovedTable">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>DOI</th>
+                <th>Ano</th>
+                <th>Arquivo</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="card">
-      <h2>Top artigos por Score100</h2>
-      <div class="row">
-        <label class="small">Filtrar núcleo <select id="nucleoFilter"><option value="">Todos</option><option>Núcleo A</option><option>Núcleo B</option><option>Periférico</option><option>Descarte</option></select></label>
-        <label class="small">Itens por página <input id="pageSize" type="number" value="50" min="10" max="500" style="width:90px"></label>
-        <button id="prevPage" class="btn" type="button">Anterior</button>
-        <button id="nextPage" class="btn" type="button">Próxima</button>
-        <span id="pageInfo" class="small"></span>
-      </div>
-      <div style="overflow:auto; margin-top:8px;">
-        <table id="topTable">
-          <thead>
-            <tr>
-              <th>Título</th>
-              <th>Ano</th>
-              <th>Citações</th>
-              <th>DOI</th>
-              <th>Núcleo</th>
-              <th>C*</th><th>R*</th><th>T*</th><th>A*</th><th>Score100</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+  <div class="card">
+    <h2>Top artigos por Score100</h2>
+    <div class="row">
+      <label class="small">Filtrar núcleo <select id="nucleoFilter">
+          <option value="">Todos</option>
+          <option>Núcleo A</option>
+          <option>Núcleo B</option>
+          <option>Periférico</option>
+          <option>Descarte</option>
+        </select></label>
+      <label class="small">Itens por página <input id="pageSize" type="number" value="50" min="10" max="500" style="width:90px"></label>
+      <button id="prevPage" class="btn" type="button">Anterior</button>
+      <button id="nextPage" class="btn" type="button">Próxima</button>
+      <span id="pageInfo" class="small"></span>
     </div>
+    <div style="overflow:auto; margin-top:8px;">
+      <table id="topTable">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Ano</th>
+            <th>Citações</th>
+            <th>DOI</th>
+            <th>Núcleo</th>
+            <th>C*</th>
+            <th>R*</th>
+            <th>T*</th>
+            <th>A*</th>
+            <th>Score100</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -232,19 +351,29 @@
     let currentRows = [];
     let currentPage = 1;
 
-    function setStatus(msg) { statusEl.textContent = msg; }
-    function parseList(v){ return String(v||"").split(",").map(x=>x.trim()).filter(Boolean); }
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    function parseList(v) {
+      return String(v || "").split(",").map(x => x.trim()).filter(Boolean);
+    }
 
     fileInput.addEventListener('change', () => {
       runBtn.disabled = fileInput.files.length === 0;
       setStatus(fileInput.files.length ? `${fileInput.files.length} arquivo(s) selecionado(s).` : 'Nenhum arquivo selecionado.');
     });
 
-    ;['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
-      e.preventDefault(); e.stopPropagation(); dropzone.classList.add('drag');
-    }));
-    ;['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => {
-      e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('drag');
+    ;
+    ['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('drag');
+    }));;
+    ['dragleave', 'drop'].forEach(evt => dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('drag');
     }));
     dropzone.addEventListener('drop', e => {
       const dt = e.dataTransfer;
@@ -285,7 +414,10 @@
       };
       fd.append('params', JSON.stringify(params));
       try {
-        const res = await fetch('run_pipeline.php', { method: 'POST', body: fd });
+        const res = await fetch('run_pipeline.php', {
+          method: 'POST',
+          body: fd
+        });
         const raw = await res.text();
         let data;
         try {
@@ -309,7 +441,12 @@
 
     function render(data) {
       const s = data.summary;
-      const cc = Object.assign({'Núcleo A':0,'Núcleo B':0,'Periférico':0,'Descarte':0}, s.core_counts || {});
+      const cc = Object.assign({
+        'Núcleo A': 0,
+        'Núcleo B': 0,
+        'Periférico': 0,
+        'Descarte': 0
+      }, s.core_counts || {});
       kpisEl.innerHTML = [
         kpi('Registros brutos', s.raw_records),
         kpi('Após dedup DOI', s.after_doi),
@@ -349,19 +486,40 @@
           datasets: [{
             label: 'Artigos',
             data: values,
-            backgroundColor: ['#22c55e','#38bdf8','#f59e0b','#ef4444']
+            backgroundColor: ['#22c55e', '#38bdf8', '#f59e0b', '#ef4444']
           }]
         },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
       });
 
-      plotNucleo.style.display = "none"; plotScore.style.display = "none";
+      plotNucleo.style.display = "none";
+      plotScore.style.display = "none";
       if (data.plot_urls) {
-        if (data.plot_urls.core_distribution) { plotNucleo.src = data.plot_urls.core_distribution + '?t=' + Date.now(); plotNucleo.style.display = 'block'; }
-        if (data.plot_urls.score_histogram) { plotScore.src = data.plot_urls.score_histogram + '?t=' + Date.now(); plotScore.style.display = 'block'; }
+        if (data.plot_urls.core_distribution) {
+          plotNucleo.src = data.plot_urls.core_distribution + '?t=' + Date.now();
+          plotNucleo.style.display = 'block';
+        }
+        if (data.plot_urls.score_histogram) {
+          plotScore.src = data.plot_urls.score_histogram + '?t=' + Date.now();
+          plotScore.style.display = 'block';
+        }
       }
 
-      const ded = data.dedup_removed || {counts:{doi_removed:0,title_removed:0},doi_removed:[],title_removed:[]};
+      const ded = data.dedup_removed || {
+        counts: {
+          doi_removed: 0,
+          title_removed: 0
+        },
+        doi_removed: [],
+        title_removed: []
+      };
       doiRemovedCount.textContent = ded.counts?.doi_removed ?? 0;
       titleRemovedCount.textContent = ded.counts?.title_removed ?? 0;
       doiRemovedBody.innerHTML = '';
@@ -426,11 +584,23 @@
       pageInfo.textContent = `Página ${currentPage}/${totalPages} • ${filtered.length} artigo(s) filtrado(s)`;
     }
 
-    nucleoFilter.addEventListener('change', () => { currentPage = 1; renderTable(); });
-    pageSizeInput.addEventListener('change', () => { currentPage = 1; renderTable(); });
-    prevPageBtn.addEventListener('click', () => { currentPage = Math.max(1, currentPage - 1); renderTable(); });
-    nextPageBtn.addEventListener('click', () => { currentPage += 1; renderTable(); });
-
+    nucleoFilter.addEventListener('change', () => {
+      currentPage = 1;
+      renderTable();
+    });
+    pageSizeInput.addEventListener('change', () => {
+      currentPage = 1;
+      renderTable();
+    });
+    prevPageBtn.addEventListener('click', () => {
+      currentPage = Math.max(1, currentPage - 1);
+      renderTable();
+    });
+    nextPageBtn.addEventListener('click', () => {
+      currentPage += 1;
+      renderTable();
+    });
   </script>
 </body>
+
 </html>
