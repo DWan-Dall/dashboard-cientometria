@@ -5,7 +5,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Cientometria de Enchentes + IA</title>
+  <title>Dashboard Bibliométrico e Cienciométrico</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -26,7 +26,7 @@
     .container {
       max-width: 1200px;
       margin: 24px auto;
-      padding: 0 16px 64px;
+      padding: 0 16px 34px;
     }
     .card {
       background: rgba(17,24,39,0.9);
@@ -35,6 +35,7 @@
       padding: 16px;
       margin-bottom: 16px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      margin: 2%;
     }
     h1, h2 { margin: 8px 0 14px; }
     p { color: var(--muted); }
@@ -91,7 +92,7 @@
 <body>
   <div class="container">
     <div class="card">
-      <h1>Dashboard interativo de cientometria</h1>
+      <h1>Dashboard Bibliométrico e Cienciométrico</h1>
       <p>Importe planilhas de Scopus, Lens e outras bases (<strong>.csv/.xlsx/.bib</strong>). O sistema normaliza campos, deduplica por DOI + título e aplica filtro temático + escore de relevância automaticamente.</p>
       <div id="dropzone" class="dropzone">
         <input id="fileInput" type="file" multiple accept=".csv,.xlsx,.bib,.tsv,.txt" />
