@@ -26,7 +26,7 @@
     .container {
       max-width: 1200px;
       margin: 24px auto;
-      padding: 0 16px 34px;
+      padding: 0 16px 64px;
     }
     .card {
       background: rgba(17,24,39,0.9);
@@ -123,6 +123,16 @@
         </div>
 
         <div class="row" style="margin-top:10px; border-top:1px solid #243041; padding-top:10px;">
+          <span class="small" style="font-weight:700; color:#cbd5e1;">Termos configuráveis (separe por vírgula)</span>
+          <label class="small" style="display:block; width:100%;">Tema 1 <input id="termsFlood" type="text" value="flood,inundação,inundacao,enchente,flooding,inundation" style="width:100%"></label>
+          <label class="small" style="display:block; width:100%;">Tema 2 <input id="termsForecast" type="text" value="forecast,forecasting,prediction,previsão,previsao,early warning" style="width:100%"></label>
+          <label class="small" style="display:block; width:100%;">Métodos/abordagem <input id="termsAI" type="text" value="machine learning,deep learning,artificial intelligence,neural network,xgboost,svm,random forest,cnn,rnn,lstm" style="width:100%"></label>
+          <label class="small" style="display:block; width:100%;">Exclusão <input id="termsExclude" type="text" value="flood insurance,flood mythology,flood psychology" style="width:100%"></label>
+          <label class="small" style="display:block; width:100%;">Dados tipo A <input id="termsInputA" type="text" value="rain,rainfall,chuva,streamflow,vazao,vazão,water level,hydrolog" style="width:100%"></label>
+          <label class="small" style="display:block; width:100%;">Dados tipo B <input id="termsInputB" type="text" value="satellite,dem,digital elevation,remote sensing,geospatial,gis" style="width:100%"></label>
+        </div>
+
+        <div class="row" style="margin-top:10px; border-top:1px solid #243041; padding-top:10px;">
           <span class="small" style="font-weight:700; color:#cbd5e1;">Reconciliação metodológica (alvos)</span>
           <label class="small">Bruto <input id="targetRaw" type="number" value="16845" style="width:90px"></label>
           <label class="small">Após DOI <input id="targetDoi" type="number" value="12612" style="width:90px"></label>
@@ -171,7 +181,7 @@
     </div>
 
     <div class="card">
-      <h2>Top artigos por Score</h2>
+      <h2>Top artigos por Score100</h2>
       <div class="row">
         <label class="small">Filtrar núcleo <select id="nucleoFilter"><option value="">Todos</option><option>Núcleo A</option><option>Núcleo B</option><option>Periférico</option><option>Descarte</option></select></label>
         <label class="small">Itens por página <input id="pageSize" type="number" value="50" min="10" max="500" style="width:90px"></label>
@@ -223,6 +233,7 @@
     let currentPage = 1;
 
     function setStatus(msg) { statusEl.textContent = msg; }
+    function parseList(v){ return String(v||"").split(",").map(x=>x.trim()).filter(Boolean); }
 
     fileInput.addEventListener('change', () => {
       runBtn.disabled = fileInput.files.length === 0;
@@ -262,6 +273,14 @@
           nucleo_a: Number(document.getElementById('thA').value || 70),
           nucleo_b: Number(document.getElementById('thB').value || 50),
           periferico: Number(document.getElementById('thP').value || 30)
+        },
+        terms: {
+          topic1: parseList(document.getElementById('termsFlood').value),
+          topic2: parseList(document.getElementById('termsForecast').value),
+          method: parseList(document.getElementById('termsAI').value),
+          exclude: parseList(document.getElementById('termsExclude').value),
+          input_a: parseList(document.getElementById('termsInputA').value),
+          input_b: parseList(document.getElementById('termsInputB').value)
         }
       };
       fd.append('params', JSON.stringify(params));
