@@ -198,6 +198,7 @@
 
         <div class="row" style="margin-top:10px; border-top:1px solid #243041; padding-top:10px;">
           <span class="small" style="font-weight:700; color:#cbd5e1;">Termos configuráveis (separe por vírgula)</span>
+          <label class="small" style="display:block; width:100%;"><input id="useValidatedTerms" type="checkbox" checked> Usar as listas de termos do método validado (18 / 20 / 40 / 15 termos). Desmarque para usar os campos abaixo.</label>
           <label class="small" style="display:block; width:100%;">Tema 1 <input id="termsFlood" type="text" value="flood,inundação,inundacao,enchente,flooding,inundation" style="width:100%"></label>
           <label class="small" style="display:block; width:100%;">Tema 2 <input id="termsForecast" type="text" value="forecast,forecasting,prediction,previsão,previsao,early warning" style="width:100%"></label>
           <label class="small" style="display:block; width:100%;">Métodos/abordagem <input id="termsAI" type="text" value="machine learning,deep learning,artificial intelligence,neural network,xgboost,svm,random forest,cnn,rnn,lstm" style="width:100%"></label>
@@ -223,7 +224,14 @@
         <label class="small">Motor:
           <select id="engineSelect">
             <option value="python">Python</option>
-            <option value="r">R</option>
+            <option value="r">R (legado: não implementa o método validado)</option>
+          </select>
+        </label>
+        <label class="small">Modo do método:
+          <select id="modeSelect" title="original = reproduz a execução de jan/2026; variante = muda só a exclusão dam/dike/levee; corrigida = corrige também IEEE/SciELO e registros sem DOI">
+            <option value="original">Original (reproduz jan/2026)</option>
+            <option value="variante_exclusao">Variante (exclusão por palavra inteira)</option>
+            <option value="corrigida">Corrigida (muda os números)</option>
           </select>
         </label>
         <button id="runBtn" class="btn" disabled>Processar planilhas</button>
@@ -389,7 +397,9 @@
       const fd = new FormData();
       for (const file of fileInput.files) fd.append('files[]', file);
       fd.append('engine', engineSelect.value);
+      const useValidated = document.getElementById('useValidatedTerms').checked;
       const params = {
+        modo: document.getElementById('modeSelect').value,
         weights: {
           c: Number(document.getElementById('wC').value || 0.35),
           r: Number(document.getElementById('wR').value || 0.2),
@@ -403,7 +413,7 @@
           nucleo_b: Number(document.getElementById('thB').value || 50),
           periferico: Number(document.getElementById('thP').value || 30)
         },
-        terms: {
+        terms: useValidated ? {} : {
           topic1: parseList(document.getElementById('termsFlood').value),
           topic2: parseList(document.getElementById('termsForecast').value),
           method: parseList(document.getElementById('termsAI').value),
@@ -476,6 +486,10 @@
         s.t_star_distribution ? ('Distribuição T*: ' + JSON.stringify(s.t_star_distribution)) : '',
         s.a_star_bins ? ('Faixas A*: ' + JSON.stringify(s.a_star_bins)) : '',
         s.score_stats ? ('Score100 stats: ' + JSON.stringify(s.score_stats)) : '',
+        data.modo ? ('Modo do método: ' + data.modo) : '',
+        data.extras && data.extras.exclusao_por_trecho ? ('Exclusão por trecho de texto (dam/dike/levee dentro de outra palavra): ' + JSON.stringify(data.extras.exclusao_por_trecho)) : '',
+        data.extras && data.extras.perdas_no_fluxo ? ('Perdas no fluxo: ' + JSON.stringify(data.extras.perdas_no_fluxo)) : '',
+        data.extras && data.extras.sensibilidade_pesos ? ('Sensibilidade aos pesos (Núcleo A original): ' + JSON.stringify(data.extras.sensibilidade_pesos)) : '',
         'Reconciliação (delta atual - alvo): ' + JSON.stringify(recon, null, 2)
       ].filter(Boolean).join('\n');
       if (chart) chart.destroy();

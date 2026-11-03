@@ -1,8 +1,62 @@
 # dashboard-cientometria
 
-Dashboard interativo (PHP + Python/R) para apoiar revisões sistemáticas com foco em cientometria de enchentes e IA/ML.
+Triagem cientométrica **replicável** para revisões sobre previsão de enchentes com IA/ML: pacote Python (`cientometria`), dashboard (PHP) e notebook de replicação.
 
-## Funcionalidades
+> **Aviso metodológico.** A triagem é automática (casamento de termos + escore ponderado). **Não há revisão manual registro a registro**, então não existe concordância entre revisores. Os escores 0–100 são *relativos ao corpus* (min–max): o "100" não é qualidade absoluta, e o rótulo "Núcleo A" (corte fixo em 70) depende da composição do corpus. A posição no ranking é mais estável que o rótulo. Os artigos do estrato mais alto devem ser conferidos manualmente.
+
+## Três modos (mesmo código, decisões explícitas)
+
+| Modo | O que faz | Para que serve |
+|---|---|---|
+| `original` | Reproduz exatamente o procedimento de jan/2026 (scripts em `referencia/`), inclusive suas falhas | Replicar e auditar os números do capítulo |
+| `variante_exclusao` | Muda **somente** a exclusão `dam/dike/levee` (de trecho de texto para palavra inteira) | Medir quanto o resultado depende dessa decisão |
+| `corrigida` | Corrige também a leitura de colunas (IEEE/SciELO/Scopus) e mantém registros sem DOI | Uso futuro; **muda os números** |
+
+Não se escolhe o modo para "chegar" a um resultado esperado: o objetivo é mostrar a diferença entre eles.
+
+## Falhas do procedimento original (documentadas e testáveis)
+1. A coluna de base de origem (`source_db`) fica vazia (atribuição de escalar a um DataFrame vazio); o mesmo ocorre com campos cuja coluna não existe no arquivo.
+2. A etapa de DOI descarta todos os registros sem DOI (não é deduplicação).
+3. Os termos de exclusão são testados por trecho de texto: `dam` casa com *damage*.
+4. Colunas inexistentes (IEEE: título/palavras-chave; SciELO-EN; Scopus: `Keywords`) são ignoradas em silêncio.
+5. Termos curtos (`dem`, `gis`, `rnn`, `cnn`) também casam dentro de outras palavras.
+
+`cientometria.diagnostico` torna essas falhas visíveis para os seus dados.
+
+## Uso rápido (Python)
+
+```python
+from cientometria import Config, executar, ler_pasta, robustez, diagnostico
+
+bases = ler_pasta("minhas_exportacoes/")        # os 8 CSVs (ver cientometria/entrada.py)
+orig = executar(bases, Config.original())
+print(orig.contagens, orig.estratos())
+
+var = executar(bases, Config.variante_exclusao())
+print(robustez.tabela_referencia(orig, var))      # onde ficam os artigos do Núcleo A original
+print(robustez.sensibilidade_pesos(orig, n=10000, seed=42))
+print(diagnostico.exclusao_por_trecho(orig))
+```
+
+Validação externa (referências de uma revisão independente): `cientometria.validacao.validar_referencias` (exemplo: `exemplos/referencias_dias2025.csv`).
+
+## Testes
+
+```bash
+pip install -r requirements.txt
+pytest -q
+```
+
+`tests/test_equivalencia_original.py` executa os scripts originais (`referencia/fase2..5`) e o pacote sobre as mesmas exportações **sintéticas** e exige resultados idênticos. Com seus dados reais, rode o notebook (`notebooks/replicacao_cientometria.ipynb`), que compara cada número com o declarado no relatório original (✓/✗).
+
+## Dados
+As exportações da Lens, Scopus, IEEE Xplore e SciELO têm licença das bases e **não são redistribuídas** aqui. Cada pessoa usa as próprias exportações.
+
+## Dashboard (PHP)
+
+O motor **Python** usa o pacote `cientometria` (modos original/variante/corrigida, listas de termos validadas por padrão, diagnósticos e sensibilidade aos pesos no painel de parâmetros). O motor **R** (`scripts/pipeline.R`) é **legado** e não implementa o método validado; o Python anterior está em `scripts/pipeline_legado.py`.
+
+Funcionalidades (descrição anterior à versão validada; as regras de filtro e escore agora seguem o pacote):
 
 - Upload de múltiplas planilhas (`.csv`, `.tsv`, `.txt`, `.xlsx`, `.bib`) de fontes como Scopus, Lens e similares.
 - Seleção do motor de processamento: **Python** ou **R** diretamente na interface.
