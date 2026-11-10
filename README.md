@@ -76,10 +76,22 @@ export CIENTOMETRIA_USUARIO=pesquisa
 export CIENTOMETRIA_SENHA_HASH="$(php -r 'echo password_hash("troque-esta-senha", PASSWORD_DEFAULT);')"
 ```
 
+Acesse por `localhost`/`127.0.0.1`: outros nomes no cabeçalho `Host` são recusados (proteção contra DNS
+rebinding). Para usar um nome de servidor, liste-o em `CIENTOMETRIA_HOSTS` (separados por vírgula) e configure
+credenciais. Atrás de proxy reverso a senha é sempre exigida.
+
+Limites por processo (contra negação de serviço): `CIENTOMETRIA_MEMORIA_MAX_MB` (padrão 6144),
+`CIENTOMETRIA_TEMPO_MAX_S` (3600), `CIENTOMETRIA_MAX_MB_DESCOMPACTADO` (512 por planilha .xlsx).
+
 Outras variáveis: `CIENTOMETRIA_MAX_MB_ARQUIVO` (padrão 200), `CIENTOMETRIA_MAX_ARQUIVOS` (50),
 `CIENTOMETRIA_PROJETOS` (pasta dos projetos), `CIENTOMETRIA_DIR_UPLOAD` (temporários).
 `CIENTOMETRIA_PERMITIR_SEM_SENHA=1` só deve ser usado atrás de porta publicada em 127.0.0.1 (como no
-docker-compose). Detalhes em `docs/AUDITORIA.md` §5.
+docker-compose). Relatório completo de segurança e estabilidade, com evidências: `docs/SEGURANCA.md`.
+Validação em caixa-preta de uma instância em execução:
+
+```bash
+python scripts/validacao_seguranca.py --base http://127.0.0.1:8000
+```
 
 ## Linha de comando (sem dashboard)
 

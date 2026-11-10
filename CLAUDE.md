@@ -26,6 +26,10 @@
   (`ingestao.validar_conteudo`) e confina a importação (`CIENTOMETRIA_DIR_IMPORTACAO`).
 - Identificadores vindos da web (projeto, execução, arquivo) sempre validados por regex em `projetos.py`.
 - Alterações em metadados de projeto sempre sob `_trava()`; JSON com `_json()` (atômico).
+- `Host` restrito (DNS rebinding) e cabeçalhos de proxy tratados como acesso remoto (`seguranca.php`).
+- Relatórios para planilha: XLSX sem fórmulas e CSV com prefixo `'` (`relatorios.py`); dados brutos intactos.
+- Toda vulnerabilidade nova: reproduzir, corrigir, teste automatizado e linha em `docs/SEGURANCA.md`.
+- Testes de interface (Playwright) não podem desligar o CSP (`bypass_csp`).
 
 ## Comandos
 
@@ -37,6 +41,8 @@ for f in *.php; do php -l $f; done        # lint PHP
 ruff check cientometria scripts tests     # lint Python
 bandit -q -r cientometria                 # análise de segurança
 python scripts/verificar_repositorio.py   # arquivos congelados + ausência de dados licenciados
+python scripts/validacao_seguranca.py --base http://127.0.0.1:8000   # ataques em caixa-preta (instância rodando)
+python tests/regressao/gerar_esperado.py  # SÓ para mudança intencional e documentada de resultado
 ```
 
 ## Mapa rápido

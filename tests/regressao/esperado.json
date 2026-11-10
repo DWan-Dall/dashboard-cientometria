@@ -1,0 +1,1322 @@
+{
+ "maior": {
+  "corrigida": {
+   "contagens": {
+    "apos_doi": 1272,
+    "candidatos_antes_da_exclusao": 914,
+    "corpus": 524,
+    "duplicatas_doi": 3291,
+    "excluidos_entre_candidatos": 390,
+    "nucleo_obrigatorio": 626,
+    "registros": 4563,
+    "removidos_etapa_doi": 3291,
+    "removidos_titulo": 5,
+    "removidos_total": 3296,
+    "sem_doi": 672,
+    "unicos": 1267
+   },
+   "estratos": {
+    "Descarte": 208,
+    "Núcleo A": 4,
+    "Núcleo B": 66,
+    "Periférico": 246
+   },
+   "hash_corpus": "dd00b4dd2a474ebf666b989c84500c18670c11c7d91e840fd5efa0bc6ac8fb53",
+   "soma_escore": 17914.13,
+   "top10_doi": [
+    "10.1021/x181",
+    "10.1022/x182",
+    "10.1016/x216",
+    "",
+    "",
+    "10.1037/x17",
+    "10.1008/x188",
+    "",
+    "",
+    ""
+   ],
+   "versao_metodo": "corrigida-2"
+  },
+  "corrigida_v1": {
+   "contagens": {
+    "apos_doi": 1272,
+    "candidatos_antes_da_exclusao": 914,
+    "corpus": 524,
+    "duplicatas_doi": 3291,
+    "excluidos_entre_candidatos": 390,
+    "nucleo_obrigatorio": 626,
+    "registros": 4563,
+    "removidos_etapa_doi": 3291,
+    "removidos_titulo": 5,
+    "removidos_total": 3296,
+    "sem_doi": 672,
+    "unicos": 1267
+   },
+   "estratos": {
+    "Descarte": 208,
+    "Núcleo A": 4,
+    "Núcleo B": 66,
+    "Periférico": 246
+   },
+   "hash_corpus": "dd00b4dd2a474ebf666b989c84500c18670c11c7d91e840fd5efa0bc6ac8fb53",
+   "soma_escore": 17914.13,
+   "top10_doi": [
+    "10.1021/x181",
+    "10.1022/x182",
+    "10.1016/x216",
+    "",
+    "",
+    "10.1037/x17",
+    "10.1008/x188",
+    "",
+    "",
+    ""
+   ],
+   "versao_metodo": "corrigida-1"
+  },
+  "importacao": {
+   "campos": [
+    {
+     "base": "Lens (EN)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 1500,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "year",
+     "coluna_usada": "Publication Year",
+     "pct_ausente": 0.0,
+     "registros": 1500,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 19.3,
+     "registros": 1500,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "keywords",
+     "coluna_usada": "Keywords",
+     "pct_ausente": 27.4,
+     "registros": 1500,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "citations",
+     "coluna_usada": "Citing Works Count",
+     "pct_ausente": 0.0,
+     "registros": 1500,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 14.6,
+     "registros": 1500,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 1500,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "year",
+     "coluna_usada": "Publication Year",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 26.7,
+     "registros": 150,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "keywords",
+     "coluna_usada": "Keywords",
+     "pct_ausente": 34.7,
+     "registros": 150,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "citations",
+     "coluna_usada": "Citing Works Count",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 11.3,
+     "registros": 150,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 150,
+     "tipo": "lens"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 1500,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "year",
+     "coluna_usada": "Year",
+     "pct_ausente": 0.0,
+     "registros": 1500,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 18.7,
+     "registros": 1500,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 1500,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "citations",
+     "coluna_usada": "Cited by",
+     "pct_ausente": 0.0,
+     "registros": 1500,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 14.4,
+     "registros": 1500,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 1500,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 750,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "year",
+     "coluna_usada": "Year",
+     "pct_ausente": 0.0,
+     "registros": 750,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 20.1,
+     "registros": 750,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 750,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "citations",
+     "coluna_usada": "Cited by",
+     "pct_ausente": 0.0,
+     "registros": 750,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 14.5,
+     "registros": 750,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 750,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "year",
+     "coluna_usada": "Year",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 22.7,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "citations",
+     "coluna_usada": "Cited by",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 14.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "title",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 500,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "year",
+     "coluna_usada": "Publication Year",
+     "pct_ausente": 0.0,
+     "registros": 500,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 20.4,
+     "registros": 500,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 500,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "citations",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 500,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 17.6,
+     "registros": 500,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 500,
+     "tipo": "ieee"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "title",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "year",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "abstract",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "citations",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 20.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "title",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "year",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "abstract",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "citations",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 12.5,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    }
+   ],
+   "fontes": [
+    {
+     "arquivo": "lens-export.csv",
+     "registros": 1500,
+     "rotulo": "Lens (EN)",
+     "sha256": "3da66b436b70b5138cd63e7955110fbe646d90e4534be958fa9eae5b0260d275",
+     "tipo": "lens"
+    },
+    {
+     "arquivo": "lens-export-port.csv",
+     "registros": 150,
+     "rotulo": "Lens (PT)",
+     "sha256": "f2b211c57b31af34f83da01bf36000e8085b52de7b9ebc0106a89ddf21407dd8",
+     "tipo": "lens"
+    },
+    {
+     "arquivo": "scopus-sem-filtro.csv",
+     "registros": 1500,
+     "rotulo": "Scopus (Sem Filtro)",
+     "sha256": "d658fc35f3013dfa91268d6390456b1488ddde39b05782b9764535d4e7277dc4",
+     "tipo": "scopus"
+    },
+    {
+     "arquivo": "scopus-com-filtro.csv",
+     "registros": 750,
+     "rotulo": "Scopus (Com Filtro)",
+     "sha256": "910bf478ad851fc40bf965405d95699ab7a410d8cfa5ac9a49f7c514e2951192",
+     "tipo": "scopus"
+    },
+    {
+     "arquivo": "scopus-port.csv",
+     "registros": 150,
+     "rotulo": "Scopus (PT)",
+     "sha256": "82028b1e9969d23d18fd5e8abcaf4bbe2881b2bf06f8af48eb938d46e6a298be",
+     "tipo": "scopus"
+    },
+    {
+     "arquivo": "ieee-export.csv",
+     "registros": 500,
+     "rotulo": "IEEE Xplore",
+     "sha256": "bc09d302e6352a69fb56c6dc92e7f24546d48115625914291ae4fde5c59500a7",
+     "tipo": "ieee"
+    },
+    {
+     "arquivo": "SciELO.csv",
+     "registros": 5,
+     "rotulo": "SciELO (EN)",
+     "sha256": "a54330f8339cd2d12dd5cf99f4f63feb7df120240eb23e2b9ac86964996ad57a",
+     "tipo": "scielo"
+    },
+    {
+     "arquivo": "SciELO-port.csv",
+     "registros": 8,
+     "rotulo": "SciELO (PT)",
+     "sha256": "b2fd6c8818ab61e6596d89736a421fb60a419457c2c0eccfa85efc945db3371c",
+     "tipo": "scielo"
+    }
+   ]
+  },
+  "original": {
+   "contagens": {
+    "apos_doi": 600,
+    "candidatos_antes_da_exclusao": 458,
+    "corpus": 217,
+    "duplicatas_doi": 3291,
+    "excluidos_entre_candidatos": 241,
+    "nucleo_obrigatorio": 250,
+    "registros": 4563,
+    "removidos_etapa_doi": 3963,
+    "removidos_titulo": 1,
+    "removidos_total": 3964,
+    "sem_doi": 672,
+    "unicos": 599
+   },
+   "estratos": {
+    "Descarte": 88,
+    "Núcleo A": 3,
+    "Núcleo B": 30,
+    "Periférico": 96
+   },
+   "hash_corpus": "2bf851761479c606b3f85c5061b80d31ebc55b3d13d3731c25550a0bc5883083",
+   "soma_escore": 7448.8,
+   "top10_doi": [
+    "10.1021/x181",
+    "10.1022/x182",
+    "10.1016/x216",
+    "10.1037/x17",
+    "10.1008/x188",
+    "10.1001/x21",
+    "10.1037/x297",
+    "10.1015/x115",
+    "10.1013/x173",
+    "10.1001/x221"
+   ],
+   "versao_metodo": "original-2026.01"
+  },
+  "variante_exclusao": {
+   "contagens": {
+    "apos_doi": 600,
+    "candidatos_antes_da_exclusao": 458,
+    "corpus": 267,
+    "duplicatas_doi": 3291,
+    "excluidos_entre_candidatos": 191,
+    "nucleo_obrigatorio": 304,
+    "registros": 4563,
+    "removidos_etapa_doi": 3963,
+    "removidos_titulo": 1,
+    "removidos_total": 3964,
+    "sem_doi": 672,
+    "unicos": 599
+   },
+   "estratos": {
+    "Descarte": 109,
+    "Núcleo A": 3,
+    "Núcleo B": 35,
+    "Periférico": 120
+   },
+   "hash_corpus": "82436c13a54c7f914a3f0acda61683baa8fd79943534f50feed6901d9445c822",
+   "soma_escore": 9098.15,
+   "top10_doi": [
+    "10.1021/x181",
+    "10.1022/x182",
+    "10.1016/x216",
+    "10.1037/x17",
+    "10.1008/x188",
+    "10.1034/x254",
+    "10.1032/x252",
+    "10.1001/x21",
+    "10.1037/x297",
+    "10.1015/x115"
+   ],
+   "versao_metodo": "variante-1"
+  }
+ },
+ "padrao": {
+  "corrigida": {
+   "contagens": {
+    "apos_doi": 571,
+    "candidatos_antes_da_exclusao": 386,
+    "corpus": 211,
+    "duplicatas_doi": 352,
+    "excluidos_entre_candidatos": 175,
+    "nucleo_obrigatorio": 276,
+    "registros": 923,
+    "removidos_etapa_doi": 352,
+    "removidos_titulo": 1,
+    "removidos_total": 353,
+    "sem_doi": 124,
+    "unicos": 570
+   },
+   "estratos": {
+    "Descarte": 111,
+    "Núcleo A": 4,
+    "Núcleo B": 9,
+    "Periférico": 87
+   },
+   "hash_corpus": "7ce72b2a58b4437fe31fe7587f31170566932ff403a9efbc90c6aa3e5f9ea3c5",
+   "soma_escore": 6380.53,
+   "top10_doi": [
+    "10.1021/x141",
+    "10.1027/x107",
+    "10.1017/x277",
+    "10.1029/x109",
+    "10.1010/x50",
+    "10.1017/x177",
+    "",
+    "10.1031/x271",
+    "10.1014/x174",
+    ""
+   ],
+   "versao_metodo": "corrigida-2"
+  },
+  "corrigida_v1": {
+   "contagens": {
+    "apos_doi": 571,
+    "candidatos_antes_da_exclusao": 386,
+    "corpus": 211,
+    "duplicatas_doi": 352,
+    "excluidos_entre_candidatos": 175,
+    "nucleo_obrigatorio": 276,
+    "registros": 923,
+    "removidos_etapa_doi": 352,
+    "removidos_titulo": 1,
+    "removidos_total": 353,
+    "sem_doi": 124,
+    "unicos": 570
+   },
+   "estratos": {
+    "Descarte": 111,
+    "Núcleo A": 4,
+    "Núcleo B": 9,
+    "Periférico": 87
+   },
+   "hash_corpus": "7ce72b2a58b4437fe31fe7587f31170566932ff403a9efbc90c6aa3e5f9ea3c5",
+   "soma_escore": 6380.53,
+   "top10_doi": [
+    "10.1021/x141",
+    "10.1027/x107",
+    "10.1017/x277",
+    "10.1029/x109",
+    "10.1010/x50",
+    "10.1017/x177",
+    "",
+    "10.1031/x271",
+    "10.1014/x174",
+    ""
+   ],
+   "versao_metodo": "corrigida-1"
+  },
+  "importacao": {
+   "campos": [
+    {
+     "base": "Lens (EN)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 300,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "year",
+     "coluna_usada": "Publication Year",
+     "pct_ausente": 0.0,
+     "registros": 300,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 22.0,
+     "registros": 300,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "keywords",
+     "coluna_usada": "Keywords",
+     "pct_ausente": 31.3,
+     "registros": 300,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "citations",
+     "coluna_usada": "Citing Works Count",
+     "pct_ausente": 0.0,
+     "registros": 300,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 14.0,
+     "registros": 300,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (EN)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 300,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 30,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "year",
+     "coluna_usada": "Publication Year",
+     "pct_ausente": 0.0,
+     "registros": 30,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 33.3,
+     "registros": 30,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "keywords",
+     "coluna_usada": "Keywords",
+     "pct_ausente": 30.0,
+     "registros": 30,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "citations",
+     "coluna_usada": "Citing Works Count",
+     "pct_ausente": 0.0,
+     "registros": 30,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 10.0,
+     "registros": 30,
+     "tipo": "lens"
+    },
+    {
+     "base": "Lens (PT)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 30,
+     "tipo": "lens"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 300,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "year",
+     "coluna_usada": "Year",
+     "pct_ausente": 0.0,
+     "registros": 300,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 23.3,
+     "registros": 300,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 300,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "citations",
+     "coluna_usada": "Cited by",
+     "pct_ausente": 0.0,
+     "registros": 300,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 13.7,
+     "registros": 300,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Sem Filtro)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 300,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "year",
+     "coluna_usada": "Year",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 24.7,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "citations",
+     "coluna_usada": "Cited by",
+     "pct_ausente": 0.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 15.3,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (Com Filtro)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 150,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "title",
+     "coluna_usada": "Title",
+     "pct_ausente": 0.0,
+     "registros": 30,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "year",
+     "coluna_usada": "Year",
+     "pct_ausente": 0.0,
+     "registros": 30,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 30.0,
+     "registros": 30,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 30,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "citations",
+     "coluna_usada": "Cited by",
+     "pct_ausente": 0.0,
+     "registros": 30,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 13.3,
+     "registros": 30,
+     "tipo": "scopus"
+    },
+    {
+     "base": "Scopus (PT)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 30,
+     "tipo": "scopus"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "title",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 100,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "year",
+     "coluna_usada": "Publication Year",
+     "pct_ausente": 0.0,
+     "registros": 100,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "abstract",
+     "coluna_usada": "Abstract",
+     "pct_ausente": 23.0,
+     "registros": 100,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 100,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "citations",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 100,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 8.0,
+     "registros": 100,
+     "tipo": "ieee"
+    },
+    {
+     "base": "IEEE Xplore",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 100,
+     "tipo": "ieee"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "title",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "year",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "abstract",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "citations",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 20.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (EN)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 5,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "title",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "year",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "abstract",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "keywords",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "citations",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "doi",
+     "coluna_usada": "DOI",
+     "pct_ausente": 25.0,
+     "registros": 8,
+     "tipo": "scielo"
+    },
+    {
+     "base": "SciELO (PT)",
+     "campo": "source",
+     "coluna_usada": "—",
+     "pct_ausente": 100.0,
+     "registros": 8,
+     "tipo": "scielo"
+    }
+   ],
+   "fontes": [
+    {
+     "arquivo": "lens-export.csv",
+     "registros": 300,
+     "rotulo": "Lens (EN)",
+     "sha256": "43a35202f26e9cb225c3d646acfadb3955c042ce4c4266f43b3d6a98cc68ea77",
+     "tipo": "lens"
+    },
+    {
+     "arquivo": "lens-export-port.csv",
+     "registros": 30,
+     "rotulo": "Lens (PT)",
+     "sha256": "be06b059c7409ba1cad625d391c41943e38f83653e55ba7043ed345d27c26b99",
+     "tipo": "lens"
+    },
+    {
+     "arquivo": "scopus-sem-filtro.csv",
+     "registros": 300,
+     "rotulo": "Scopus (Sem Filtro)",
+     "sha256": "bb336357b9a9329c6c22a7be966a7ae8520da30a339dc7b720869222976e1e5f",
+     "tipo": "scopus"
+    },
+    {
+     "arquivo": "scopus-com-filtro.csv",
+     "registros": 150,
+     "rotulo": "Scopus (Com Filtro)",
+     "sha256": "f9defef4c508a868f303d3213c6e1f7b5dbbd213ae5e9cd4cd519f98739b699e",
+     "tipo": "scopus"
+    },
+    {
+     "arquivo": "scopus-port.csv",
+     "registros": 30,
+     "rotulo": "Scopus (PT)",
+     "sha256": "4352934d7396df36f5573930945c46ce43ec052f74011ea8c522b64aadbb2f8a",
+     "tipo": "scopus"
+    },
+    {
+     "arquivo": "ieee-export.csv",
+     "registros": 100,
+     "rotulo": "IEEE Xplore",
+     "sha256": "b936f812e5d25829bf80a3dc3a507dacf0914003dd2fef7a4d51086d0eb5a91c",
+     "tipo": "ieee"
+    },
+    {
+     "arquivo": "SciELO.csv",
+     "registros": 5,
+     "rotulo": "SciELO (EN)",
+     "sha256": "4f40774d9cc8491183322878dc4b0469ca2b125079de5ceca2a0801caf07ff0a",
+     "tipo": "scielo"
+    },
+    {
+     "arquivo": "SciELO-port.csv",
+     "registros": 8,
+     "rotulo": "SciELO (PT)",
+     "sha256": "9be8f71ec30f383dbeeedc721e88b4cf144b34c4ba092467c506f707fdcfa751",
+     "tipo": "scielo"
+    }
+   ]
+  },
+  "original": {
+   "contagens": {
+    "apos_doi": 447,
+    "candidatos_antes_da_exclusao": 277,
+    "corpus": 127,
+    "duplicatas_doi": 352,
+    "excluidos_entre_candidatos": 150,
+    "nucleo_obrigatorio": 169,
+    "registros": 923,
+    "removidos_etapa_doi": 476,
+    "removidos_titulo": 28,
+    "removidos_total": 504,
+    "sem_doi": 124,
+    "unicos": 419
+   },
+   "estratos": {
+    "Descarte": 49,
+    "Núcleo A": 3,
+    "Núcleo B": 19,
+    "Periférico": 56
+   },
+   "hash_corpus": "2b5056ed24fad587e9c5280eaa3a2b12370e32726fa9c521c55deb91316077e0",
+   "soma_escore": 4532.29,
+   "top10_doi": [
+    "10.1029/x109",
+    "10.1027/x107",
+    "10.1017/x177",
+    "10.1014/x254",
+    "10.1014/x174",
+    "10.1028/x8",
+    "10.1017/x17",
+    "10.1007/x267",
+    "10.1003/x103",
+    "10.1020/x40"
+   ],
+   "versao_metodo": "original-2026.01"
+  },
+  "variante_exclusao": {
+   "contagens": {
+    "apos_doi": 447,
+    "candidatos_antes_da_exclusao": 277,
+    "corpus": 161,
+    "duplicatas_doi": 352,
+    "excluidos_entre_candidatos": 116,
+    "nucleo_obrigatorio": 209,
+    "registros": 923,
+    "removidos_etapa_doi": 476,
+    "removidos_titulo": 28,
+    "removidos_total": 504,
+    "sem_doi": 124,
+    "unicos": 419
+   },
+   "estratos": {
+    "Descarte": 84,
+    "Núcleo A": 3,
+    "Núcleo B": 7,
+    "Periférico": 67
+   },
+   "hash_corpus": "356f36248d5d6cd6962a357398a0951a0421dc9ecdcb136574219cd2b7f1e778",
+   "soma_escore": 4866.26,
+   "top10_doi": [
+    "10.1021/x141",
+    "10.1027/x107",
+    "10.1029/x109",
+    "10.1010/x50",
+    "10.1017/x177",
+    "10.1031/x271",
+    "10.1014/x174",
+    "10.1014/x254",
+    "10.1028/x8",
+    "10.1007/x267"
+   ],
+   "versao_metodo": "variante-1"
+  }
+ }
+}

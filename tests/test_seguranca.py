@@ -401,3 +401,26 @@ def test_limites_de_recursos(tmp_path, var, valor, msg):
     r = subprocess.run([sys.executable, str(RAIZ / "scripts" / "pipeline.py"), str(payload)], capture_output=True,
                        text=True, env=dict(os.environ, **{var: valor}), timeout=120)
     assert r.returncode != 0 and msg in r.stderr
+
+
+@precisa_php
+def test_permitir_sem_senha_nao_vale_atras_de_proxy(tmp_path):
+    """H2 no Docker: CIENTOMETRIA_PERMITIR_SEM_SENHA=1 não libera requisições que passaram por proxy reverso."""
+    import requests
+    porta = _porta_livre()
+    env = dict(os.environ, CIENTOMETRIA_PROJETOS=str(tmp_path), CIENTOMETRIA_PERMITIR_SEM_SENHA="1")
+    proc = subprocess.Popen([php, "-S", f"127.0.0.1:{porta}", "router.php"], cwd=RAIZ, env=env,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        base = f"http://127.0.0.1:{porta}"
+        for _ in range(50):
+            try:
+                requests.get(base, timeout=1)
+                break
+            except requests.ConnectionError:
+                time.sleep(.1)
+        assert requests.get(base + "/").status_code == 200
+        assert requests.get(base + "/", headers={"X-Forwarded-For": "203.0.113.9"}).status_code == 403
+    finally:
+        proc.terminate()
+        proc.wait(5)

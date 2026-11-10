@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, metodo-validado, "feat/**"]
+    branches: [main]
 
 permissions:
   contents: read
@@ -45,14 +45,16 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-dev.txt
       - name: Dependências
-        run: pip install -r requirements-dev.txt
+        run: |
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
       - name: Lint (ruff)
         run: ruff check cientometria scripts tests
       - name: Análise de segurança (bandit)
         run: bandit -q -r cientometria scripts/pipeline.py scripts/verificar_repositorio.py
       - name: Vulnerabilidades conhecidas nas dependências (pip-audit)
         run: pip-audit -r requirements-dev.txt --progress-spinner off
-      - name: Testes (inclui HTTP contra php -S; os de dados reais são pulados sem os arquivos)
+      - name: Testes (HTTP contra php -S, interface no Chromium; os de dados reais são pulados sem os arquivos)
         env:
           MPLBACKEND: Agg
         run: |
@@ -65,6 +67,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
       - name: Build
         run: docker build -t dashboard-cientometria:local .
       - name: Inicialização e verificação
@@ -81,6 +86,18 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/.git/HEAD)" = "404"
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8000/api.php?acao=listar_projetos)" = "403"
           test "$(docker exec dashboard-cientometria id -u)" = "10001"
+      - name: Validação de segurança em caixa-preta contra o contêiner
+        run: |
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+          python scripts/validacao_seguranca.py --base http://127.0.0.1:8000 --json validacao.json
+      - name: Evidências
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: validacao-seguranca
+          path: validacao.json
+          if-no-files-found: ignore
       - name: Logs
         if: always()
         run: docker compose logs --no-color | tail -50; docker compose down -v

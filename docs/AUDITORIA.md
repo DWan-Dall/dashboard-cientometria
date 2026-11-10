@@ -176,6 +176,10 @@ Verificações automáticas: `bandit` (0 achados em 3.033 linhas), `pip-audit` (
 dependências de desenvolvimento — pytest 8.4.2 e requests 2.32.5 — atualizadas; árvore completa sem
 vulnerabilidades conhecidas), `ruff`.
 
+Rodada 3 (mesmo dia): mais 6 achados — DNS rebinding, proxy reverso local, triagem rápida sem validação,
+metadados sem validação, injeção de fórmulas nos relatórios e negação de serviço — e a validação em caixa-preta
+de 3 versões e do Docker. Detalhes, evidências e riscos residuais em `docs/SEGURANCA.md`.
+
 ## 6. Persistência (rodada 2)
 
 | # | Achado | Evidência | Correção |

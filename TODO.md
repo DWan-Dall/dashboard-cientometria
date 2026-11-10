@@ -22,11 +22,16 @@
 - [x] Docker: build, inicialização com compose, testes dentro do contêiner e fim a fim.
 - [x] Bibliometria × saídas originais do R: 12 grupos idênticos via `compat_r` (§7), 20 testes.
 - [x] ruff, bandit, pip-audit; CI no GitHub Actions (`.github/workflows/ci.yml`).
-- [ ] **Confirmar a primeira execução do CI no GitHub** (os jobs foram simulados localmente; o PR é a
-      primeira execução real nos runners).
+- [x] Primeira execução do CI no GitHub: verde (8 jobs, commit `8fc05f9`).
+- [x] Rodada 3 de segurança: 6 achados novos (DNS rebinding, proxy reverso, triagem rápida sem validação,
+      metadados sem validação, injeção de fórmulas, negação de serviço) corrigidos e testados.
+- [x] Validação em caixa-preta antes/depois em 3 versões e no Docker (`docs/SEGURANCA.md` §3).
+- [x] Regressão: retrato do processamento (4 modos × 2 cenários), contrato da API, interface no Chromium.
 - [ ] Executar `tests/test_comparacao_r.py` e `tests/test_dados_reais.py` em máquina com os dados (não
       rodam no CI porque os dados não são versionados).
 - [ ] Revisão de segurança por outra pessoa (este relatório foi produzido por quem também escreveu as correções).
+- [ ] Limite de tentativas de senha e de taxa de requisições; fila de execução (riscos residuais em docs/SEGURANCA.md §5).
+- [ ] Testar `.htaccess` num Apache real, ou removê-lo se não houver uso previsto com Apache.
 - [ ] Definir política de acesso para uso em servidor compartilhado: HTTPS (proxy reverso), credenciais
       fortes, limite de taxa; hoje o modelo é uso local ou atrás de 127.0.0.1.
 

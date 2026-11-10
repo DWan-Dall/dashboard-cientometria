@@ -1,0 +1,18 @@
+V1   BLOQUEADO      Arquivos internos servidos (projetos/, .git, código) — todos 404
+V2   BLOQUEADO      Path traversal no identificador do projeto — HTTP 422
+V3   BLOQUEADO      CSRF / origem não verificada — HTTP 403
+V4   BLOQUEADO      Acesso remoto sem credenciais — HTTP 403 (Host=IP), 403 (Host=localhost falsificado) via http://192.0.2.2:8811
+V5   BLOQUEADO      XSS armazenado via título de exportação — não executou; exibido como texto=True
+V6   BLOQUEADO      Uploads gravados no webroot — nenhum arquivo em tmp_uploads/ durante o processamento
+V7   BLOQUEADO      Upload de conteúdo incompatível com a extensão — HTTP 422
+V8   BLOQUEADO      Script de CDN sem versão fixa/SRI — nenhum
+V10  BLOQUEADO      Caminhos absolutos em mensagens de erro — FileNotFoundError: Projeto não encontrado: nao-existe-xyz
+H1   EXPLORÁVEL     DNS rebinding (Host do atacante) — página 200, API 200
+H2   EXPLORÁVEL     Proxy reverso local dispensa senha — HTTP 200
+H3   EXPLORÁVEL     Triagem rápida sem validação de conteúdo — HTTP 500: {"erro":"Falha no pipeline: pandas._config.config.OptionError: No such
+H4   EXPLORÁVEL     Metadados do projeto sem validação — HTTP 200
+H5   EXPLORÁVEL     Injeção de fórmula no XLSX do relatório — células com fórmula: ['C2']
+P1   BLOQUEADO      Importações simultâneas corrompem o registro — 96/96 respostas 200; 96/96 registrados (via HTTP; o servidor limita a concorrência ao nº de workers do PHP)
+V9   BLOQUEADO      Sorteios de sensibilidade sem limite — n efetivo = 20000
+
+EXPLORÁVEIS: ['H1', 'H2', 'H3', 'H4', 'H5']

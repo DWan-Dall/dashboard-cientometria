@@ -1,0 +1,1 @@
+V4 (Docker): acesso por http://192.0.2.2:8000 (IP não-loopback) -> conexão recusada; a porta é publicada só em 127.0.0.1 do host.

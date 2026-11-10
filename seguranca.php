@@ -106,7 +106,8 @@ if (!defined('CIENTOMETRIA_SEGURANCA')) {
       }
       return;
     }
-    if (!seg_ip_local() && getenv('CIENTOMETRIA_PERMITIR_SEM_SENHA') !== '1') {
+    // Atrás de proxy reverso a senha é sempre exigida, mesmo com CIENTOMETRIA_PERMITIR_SEM_SENHA=1.
+    if (!seg_ip_local() && (getenv('CIENTOMETRIA_PERMITIR_SEM_SENHA') !== '1' || seg_via_proxy())) {
       seg_negar(403, 'Acesso remoto sem credenciais bloqueado. Configure CIENTOMETRIA_USUARIO e '
         . 'CIENTOMETRIA_SENHA_HASH (ver README).', $json);
     }

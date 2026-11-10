@@ -1,0 +1,11 @@
+Testes com dados reais (não versionados) após as correções — 2026-11-10T18:56:13Z
+CSV do corpus publicado + saídas do R (analise-aprofundada-v3 @ 71160e1):
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_dados_reais.py:38: defina CIENTOMETRIA_EXPORTACOES_ORIGINAIS
+SKIPPED [1] tests/test_dados_reais.py:50: defina CIENTOMETRIA_EXPORTACOES_ORIGINAIS
+SKIPPED [1] tests/test_dados_reais.py:59: defina CIENTOMETRIA_EXPORTACOES_ORIGINAIS
+SKIPPED [1] tests/test_dados_reais.py:68: defina CIENTOMETRIA_EXPORTACOES_ORIGINAIS
+22 passed, 4 skipped in 2.34s
+
+XLSX do corpus publicado:
+2 passed, 4 deselected in 1.17s
