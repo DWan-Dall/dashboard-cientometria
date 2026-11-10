@@ -4,7 +4,10 @@ services:
     container_name: dashboard-cientometria
     ports:
       - "8000:8000"
+    environment:
+      CIENTOMETRIA_PROJETOS: /dados/projetos
     volumes:
       - ./:/app
+      - ./projetos:/dados/projetos
     working_dir: /app
-    command: php -d upload_max_filesize=128M -d post_max_size=128M -d max_file_uploads=100 -S 0.0.0.0:8000 -t /app
+    command: php -d upload_max_filesize=256M -d post_max_size=256M -d max_file_uploads=100 -d max_execution_time=0 -S 0.0.0.0:8000 -t /app

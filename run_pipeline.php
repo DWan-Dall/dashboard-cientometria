@@ -37,8 +37,14 @@ if (!isset($_FILES['files'])) {
   exit;
 }
 
+// A triagem tem uma única implementação: o pacote Python `cientometria`.
+// O antigo motor R (scripts/pipeline.R) implementava regras próprias e foi desativado.
 $engine = $_POST['engine'] ?? 'python';
-$engine = in_array($engine, ['python', 'r'], true) ? $engine : 'python';
+if ($engine !== 'python') {
+  http_response_code(400);
+  echo json_encode(['error' => 'Motor R desativado para a triagem: o método só é executado pelo pacote Python cientometria (ver ARCHITECTURE.md).'], JSON_UNESCAPED_UNICODE);
+  exit;
+}
 
 $paramsRaw = $_POST['params'] ?? '{}';
 $params = json_decode($paramsRaw, true);
@@ -51,6 +57,7 @@ if (!is_dir($plotDir)) {
 }
 
 $paths = [];
+$originalNames = [];
 $names = $_FILES['files']['name'];
 $tmpNames = $_FILES['files']['tmp_name'];
 $errors = $_FILES['files']['error'];
@@ -63,6 +70,7 @@ for ($i = 0; $i < count($names); $i++) {
   $target = $uploadDir . '/' . uniqid('upl_', true) . '_' . $safeName;
   if (move_uploaded_file($tmpNames[$i], $target)) {
     $paths[] = $target;
+    $originalNames[] = $safeName;  // nome original: define tipo de base e ordem canônica
   }
 }
 
@@ -75,6 +83,7 @@ if (count($paths) === 0) {
 $payloadPath = $uploadDir . '/' . uniqid('payload_', true) . '.json';
 $payload = [
   'files' => $paths,
+  'names' => $originalNames,
   'plot_dir' => $plotDir,
   'plot_url_prefix' => 'tmp_uploads/plots',
   'params' => $params
@@ -82,11 +91,7 @@ $payload = [
 file_put_contents($payloadPath, json_encode($payload, JSON_UNESCAPED_UNICODE));
 
 $stderrPath = $uploadDir . '/' . uniqid('stderr_', true) . '.log';
-if ($engine === 'r') {
-  $cmd = 'Rscript ' . escapeshellarg(__DIR__ . '/scripts/pipeline.R') . ' ' . escapeshellarg($payloadPath) . ' 2>' . escapeshellarg($stderrPath);
-} else {
-  $cmd = 'python3 ' . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' ' . escapeshellarg($payloadPath) . ' 2>' . escapeshellarg($stderrPath);
-}
+$cmd = 'python3 ' . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' ' . escapeshellarg($payloadPath) . ' 2>' . escapeshellarg($stderrPath);
 
 $output = [];
 $returnVar = 0;

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# LEGADO — script anterior do dashboard (regras próprias, não é o método do artigo). Não usado.
+# Mantido para histórico; o parser BibTeX deste arquivo não funciona (regex com barra dupla).
 import json
 import re
 import sys
