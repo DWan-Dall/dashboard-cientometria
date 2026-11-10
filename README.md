@@ -1,153 +1,142 @@
-# dashboard-cientometria
+# dashboard-cientometria — plataforma de cientometria reproduzível
 
-Triagem cientométrica **replicável** para revisões sobre previsão de enchentes com IA/ML: pacote Python (`cientometria`), dashboard (PHP) e notebook de replicação.
+Importe exportações de várias bases bibliográficas, aplique o método de triagem documentado no artigo
+(escore composto C\*, R\*, T\*, A\*), meça a robustez do resultado, rode análises bibliométricas e gere
+relatórios reproduzíveis — sem depender dos notebooks originais.
 
-> **Aviso metodológico.** A triagem é automática (casamento de termos + escore ponderado). **Não há revisão manual registro a registro**, então não existe concordância entre revisores. Os escores 0–100 são *relativos ao corpus* (min–max): o "100" não é qualidade absoluta, e o rótulo "Núcleo A" (corte fixo em 70) depende da composição do corpus. A posição no ranking é mais estável que o rótulo. Os artigos do estrato mais alto devem ser conferidos manualmente.
+> **Aviso metodológico.** A triagem é automática (casamento de termos + escore ponderado). **Não há revisão
+> manual registro a registro**, então não existe concordância entre revisores. Os escores 0–100 são *relativos
+> ao corpus* (min–max): o "100" não é qualidade absoluta, e o rótulo "Núcleo A" (corte fixo em 70) depende da
+> composição do corpus. A posição no ranking é mais estável que o rótulo. Os artigos do estrato mais alto
+> devem ser conferidos manualmente.
+
+| Documento | Conteúdo |
+|---|---|
+| [METHODOLOGY.md](METHODOLOGY.md) | o método, os modos e as versões |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | módulos e decisões arquiteturais |
+| [MIGRATION.md](MIGRATION.md) | origem e destino de cada componente dos três repositórios |
+| [docs/AUDITORIA.md](docs/AUDITORIA.md) | inventário, duplicidades e achados da auditoria |
+| [TODO.md](TODO.md) | pendências |
 
 ## Três modos (mesmo código, decisões explícitas)
 
-| Modo | O que faz | Para que serve |
-|---|---|---|
-| `original` | Reproduz exatamente o procedimento de jan/2026 (scripts em `referencia/`), inclusive suas falhas | Replicar e auditar os números do capítulo |
-| `variante_exclusao` | Muda **somente** a exclusão `dam/dike/levee` (de trecho de texto para palavra inteira) | Medir quanto o resultado depende dessa decisão |
-| `corrigida` | Corrige também a leitura de colunas (IEEE/SciELO/Scopus) e mantém registros sem DOI | Uso futuro; **muda os números** |
+| Modo | Versão | O que faz | Para que serve |
+|---|---|---|---|
+| `original` | `original-2026.01` | Reproduz o procedimento de jan/2026 (`referencia/`), inclusive suas falhas | Replicar e auditar o artigo |
+| `variante_exclusao` | `variante-1` | Muda **só** a exclusão `dam/dike/levee` (trecho → palavra inteira) | Medir quanto o resultado depende dessa decisão |
+| `corrigida` | `corrigida-2` | Corrige leitura de colunas, mantém registros sem DOI e normaliza DOI | Uso futuro; **muda os números** |
 
 Não se escolhe o modo para "chegar" a um resultado esperado: o objetivo é mostrar a diferença entre eles.
+Os números do artigo (16.845 → 11.547 → 2.068 → 13/494/1.508/53) são **referências históricas a verificar**,
+não metas.
 
-## Falhas do procedimento original (documentadas e testáveis)
-1. A coluna de base de origem (`source_db`) fica vazia (atribuição de escalar a um DataFrame vazio); o mesmo ocorre com campos cuja coluna não existe no arquivo.
-2. A etapa de DOI descarta todos os registros sem DOI (não é deduplicação).
-3. Os termos de exclusão são testados por trecho de texto: `dam` casa com *damage*.
-4. Colunas inexistentes (IEEE: título/palavras-chave; SciELO-EN; Scopus: `Keywords`) são ignoradas em silêncio.
-5. Termos curtos (`dem`, `gis`, `rnn`, `cnn`) também casam dentro de outras palavras.
-
-`cientometria.diagnostico` torna essas falhas visíveis para os seus dados.
-
-## Uso rápido (Python)
-
-```python
-from cientometria import Config, executar, ler_pasta, robustez, diagnostico
-
-bases = ler_pasta("minhas_exportacoes/")        # os 8 CSVs (ver cientometria/entrada.py)
-orig = executar(bases, Config.original())
-print(orig.contagens, orig.estratos())
-
-var = executar(bases, Config.variante_exclusao())
-print(robustez.tabela_referencia(orig, var))      # onde ficam os artigos do Núcleo A original
-print(robustez.sensibilidade_pesos(orig, n=10000, seed=42))
-print(diagnostico.exclusao_por_trecho(orig))
-```
-
-Validação externa (referências de uma revisão independente): `cientometria.validacao.validar_referencias` (exemplo: `exemplos/referencias_dias2025.csv`).
-
-## Testes
-
-```bash
-pip install -r requirements.txt
-pytest -q
-```
-
-`tests/test_equivalencia_original.py` executa os scripts originais (`referencia/fase2..5`) e o pacote sobre as mesmas exportações **sintéticas** e exige resultados idênticos. Com seus dados reais, rode o notebook (`notebooks/replicacao_cientometria.ipynb`), que compara cada número com o declarado no relatório original (✓/✗).
-
-## Dados
-As exportações da Lens, Scopus, IEEE Xplore e SciELO têm licença das bases e **não são redistribuídas** aqui. Cada pessoa usa as próprias exportações.
-
-## Dashboard (PHP)
-
-O motor **Python** usa o pacote `cientometria` (modos original/variante/corrigida, listas de termos validadas por padrão, diagnósticos e sensibilidade aos pesos no painel de parâmetros). O motor **R** (`scripts/pipeline.R`) é **legado** e não implementa o método validado; o Python anterior está em `scripts/pipeline_legado.py`.
-
-Funcionalidades (descrição anterior à versão validada; as regras de filtro e escore agora seguem o pacote):
-
-- Upload de múltiplas planilhas (`.csv`, `.tsv`, `.txt`, `.xlsx`, `.bib`) de fontes como Scopus, Lens e similares.
-- Seleção do motor de processamento: **Python** ou **R** diretamente na interface.
-- Normalização de campos-chave: título, ano, resumo, palavras-chave, citações, DOI e periódico.
-- Deduplicação em 2 estágios:
-  1. por DOI;
-  2. por título normalizado (case-insensitive).
-- Filtro temático conjuntivo (AND), exigindo:
-  - enchentes/inundações + previsão,
-  - termos de IA/ML,
-  - contexto de dados hidrológicos ou geoespaciais,
-  - exclusão de tópicos marginais (insurance/mythology/psychology).
-- Cálculo de escore composto:
-  - `Score = 0.35*C* + 0.20*R* + 0.30*T* + 0.15*A*`
-- Normalização final para escala `0–100` e classificação em núcleos:
-  - Núcleo A (>=70)
-  - Núcleo B (50–69.99)
-  - Periférico (30–49.99)
-  - Descarte (<30)
-- Visualização com KPIs, gráfico de distribuição e tabela dos artigos com maior score.
-- Quando o motor **R** é usado, o pipeline também gera gráficos PNG (ggplot2) servidos no localhost.
-
-## Estrutura
-
-- `index.php`: interface web interativa.
-- `run_pipeline.php`: endpoint de upload e execução do pipeline (Python ou R).
-- `scripts/pipeline.py`: pipeline em Python.
-- `scripts/pipeline.R`: pipeline equivalente em R + geração de gráficos.
-- `Dockerfile`: imagem única com PHP + Python + R.
-- `docker-compose.yml`: execução local com container.
-
-## Como executar (local)
-
-Pré-requisitos:
-
-- PHP 8+
-- Python 3.10+
-- R 4.2+
-- Pacotes Python: `pandas`, `openpyxl`
-- Pacotes R: `jsonlite`, `readxl`, `ggplot2`
-
-Instalação de dependências Python:
+## Instalação
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Instalação de dependências R:
-
-```r
-install.packages(c("jsonlite", "readxl", "ggplot2"), repos = "https://cloud.r-project.org")
-```
-
-Iniciar aplicação:
+## Dashboard
 
 ```bash
-php -d upload_max_filesize=128M -d post_max_size=128M -d max_file_uploads=100 -S localhost:8000
+php -d upload_max_filesize=256M -d post_max_size=256M -d max_file_uploads=100 -S localhost:8000
 ```
 
-Acesse:
+Abra http://localhost:8000. Seções: **Projetos → Importação e diagnóstico → Triagem → Robustez e modos →
+Análises bibliométricas → Execuções e comparação → Relatórios**. A página `triagem_rapida.php` faz uma triagem
+avulsa, sem projeto. Os projetos ficam em `./projetos` (ou em `$CIENTOMETRIA_PROJETOS`), fora do Git.
 
-- http://localhost:8000
-
-## Como executar com Docker
-
-Build da imagem:
-
-```bash
-docker build -t dashboard-cientometria .
-```
-
-Executar container:
-
-```bash
-docker run --rm -p 8000:8000 dashboard-cientometria
-```
-
-Ou com Docker Compose:
+Com Docker (R opcional: `--build-arg COM_R=1`):
 
 ```bash
 docker compose up --build
 ```
 
-Acesse:
+## Linha de comando (sem dashboard)
 
-- http://localhost:8000
+```bash
+python -m cientometria projeto-criar "Revisão enchentes"
+```
 
-> Nota Docker: a imagem usa `venv` interno (`/opt/venv`) para instalar dependências Python, evitando o erro de PEP 668.
+```bash
+python -m cientometria importar revisao-enchentes exportacoes/*.csv exportacoes/*.ris
+```
 
-## Observações
+```bash
+python -m cientometria diagnosticar revisao-enchentes --modo original
+```
 
-- O mapeamento de colunas usa aliases comuns entre bases. Você pode ajustar os aliases em `FIELD_MAP` (Python) ou `field_map` (R).
-- Os gráficos gerados em R são salvos em `tmp_uploads/plots/` para visualização no navegador.
-- Para arquivos Scopus muito grandes, mantenha `post_max_size` e `upload_max_filesize` em pelo menos `128M`.
+```bash
+python -m cientometria executar revisao-enchentes --modo original --rotulo "réplica do artigo"
+```
+
+```bash
+python -m cientometria execucoes revisao-enchentes
+```
+
+```bash
+python -m cientometria comparar revisao-enchentes <id_a> <id_b>
+```
+
+```bash
+python -m cientometria reproduzir revisao-enchentes <id>
+```
+
+Cada execução cria `projetos/<projeto>/execucoes/<data>_<id>/` com `manifesto.json`, `corpus.csv`,
+`consolidado.csv`, `diagnosticos/` (campos ausentes, limitações, duplicatas para revisão), `bibliometria/`,
+`graficos/` (PNG 300 dpi) e `relatorios/` (CSV, XLSX, PDF, relatório metodológico em Markdown, parâmetros).
+
+## Uso como biblioteca
+
+```python
+from cientometria import Config, executar, carregar_fontes
+from cientometria import robustez, diagnostico
+
+bases, fontes = carregar_fontes(["lens-export.csv", "scopus-sem-filtro.csv"], Config.original())
+orig = executar(bases, Config.original())
+print(orig.contagens, orig.estratos())
+print(robustez.sensibilidade_pesos(orig, n=10000, seed=42))
+print(diagnostico.exclusao_por_trecho(orig))
+```
+
+Formatos aceitos: CSV, TSV, TXT, XLSX, RIS, BibTeX e Web of Science (texto). Bases reconhecidas pelas colunas:
+Scopus, Web of Science, Lens, IEEE Xplore, SciELO, OpenAlex; outras usam o mapeamento genérico.
+
+## Reproduzir o artigo
+
+1. Coloque as 8 exportações originais numa pasta, com os nomes `lens-export.csv`, `lens-export-port.csv`,
+   `scopus-sem-filtro.csv`, `scopus-com-filtro.csv`, `scopus-port.csv`, `ieee-export.csv`, `SciELO.csv`,
+   `SciELO-port.csv`.
+2. Compare com as referências históricas nos três modos:
+
+```bash
+python -m cientometria referencia /caminho/da/pasta
+```
+
+3. Rode os testes com dados reais (equivalência pacote × scripts originais e números históricos):
+
+```bash
+CIENTOMETRIA_EXPORTACOES_ORIGINAIS=/caminho/da/pasta python -m pytest tests/test_dados_reais.py -v
+```
+
+Divergência é achado a investigar e documentar em `docs/AUDITORIA.md`, nunca motivo para mudar o método.
+O corpus publicado (2.068 registros) pode ser conferido sem as exportações:
+
+```bash
+python -m cientometria verificar-corpus DB_Cientometria_Expandida_ver01.xlsx
+```
+
+## Testes
+
+```bash
+python -m pytest -q
+```
+
+`tests/test_equivalencia_original.py` executa os scripts originais e o pacote sobre exportações **sintéticas**
+e exige resultados idênticos. Isso prova a equivalência do código, **não** a reprodução do artigo, que exige
+as exportações reais.
+
+## Dados
+
+As exportações da Lens, Scopus, IEEE Xplore, SciELO, Web of Science e OpenAlex têm licença das bases e
+**não são redistribuídas** aqui. Cada pessoa usa as próprias exportações.

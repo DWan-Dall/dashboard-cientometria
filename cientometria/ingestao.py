@@ -72,6 +72,8 @@ def _ler_texto(caminho) -> tuple[str, str]:
 def ler_tabela_robusta(caminho, avisos: list) -> pd.DataFrame:
     """CSV/TSV/TXT com separador detectado e codificação alternativa."""
     texto, enc = _ler_texto(caminho)
+    if not texto.strip():
+        return pd.DataFrame()
     if enc != "utf-8-sig" and enc != "utf-8":
         avisos.append(f"codificação {enc}")
     amostra = texto[:20000]

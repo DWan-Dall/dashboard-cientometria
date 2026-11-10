@@ -344,8 +344,9 @@ def categoria_tecnologia(x: str) -> str:
 def detectar_tecnologias(df: pd.DataFrame) -> pd.Series:
     if _tem(df, "technologies"):
         return dividir(df["technologies"], sep=";")
-    texto = (df.get("title", "").astype(str) + " " + df.get("abstract", "").astype(str) + " " +
-             df.get("keywords", "").astype(str)).str.lower()
+    def col(c):
+        return df[c].fillna("").astype(str) if c in df else pd.Series("", index=df.index)
+    texto = (col("title") + " " + col("abstract") + " " + col("keywords") + " " + col("author_keywords")).str.lower()
     rx = {k: re.compile(v) for k, v in TECNOLOGIAS.items()}
     return texto.map(lambda t: [k for k, r in rx.items() if r.search(t)])
 
