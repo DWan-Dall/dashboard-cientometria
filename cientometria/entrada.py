@@ -159,6 +159,12 @@ def normalizar(df: pd.DataFrame, rotulo: str, tipo: str, cfg) -> pd.DataFrame:
     out["citations"] = numero("citations").fillna(0).astype(int)
     out["doi"] = texto("doi", "")
     out["source"] = texto("source", "Unknown")
+    # Fidelidade ao script original (achado 11, docs/AUDITORIA.md): no script, quando a exportação
+    # NÃO TEM a coluna de título (IEEE), o título fica NaN (escalar atribuído a DataFrame vazio);
+    # quando a coluna existe mas o valor está vazio, fica 'Unknown'. São grupos DISTINTOS na
+    # deduplicação por título. O texto exibido continua 'Unknown'; só a chave de deduplicação
+    # (pipeline.consolidar) diferencia os dois casos. Apenas no mapeamento fixo.
+    out["titulo_sem_coluna"] = (not tol) and (m.get("title") not in df.columns)
     out["arquivo_origem"], out["linha_origem"] = _proveniencia(df, n)
     return out
 

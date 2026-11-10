@@ -2,7 +2,9 @@
 
 ## Prioridade alta (integridade científica)
 
-- [ ] **Executar a reprodução com as 8 exportações originais** (`CIENTOMETRIA_EXPORTACOES_ORIGINAIS=… pytest
+- [ ] **Repetir a reprodução com as 8 exportações originais após a correção do achado 11** (esperado: 11.547
+      únicos; a primeira execução real, de 10/11/2026, deu 11.546 e todo o resto conferiu).
+- [ ] (feito parcialmente) **Executar a reprodução com as 8 exportações originais** (`CIENTOMETRIA_EXPORTACOES_ORIGINAIS=… pytest
       tests/test_dados_reais.py -v` e `python -m cientometria referencia <pasta>`). Registrar o resultado em
       `docs/AUDITORIA.md` §4, com o SHA-256 de cada arquivo (sem publicar os arquivos).
 - [ ] Reverificar a divisão declarada 4.233 (DOI) / 1.065 (título) com as exportações originais.

@@ -140,6 +140,40 @@ As strings da Fonte A preveem 2000–2025, artigos e revisões e um bloco costei
 inclui "scopus-sem-filtro" e "scopus-com-filtro" da mesma busca (sobreposição de 1.040 obras). As strings
 efetivamente usadas e as datas de exportação não estão registradas (o `log_buscas_template.csv` está vazio).
 
+### Achado 11 — 1 registro de diferença na deduplicação com as exportações reais *(corrigido)*
+**Evidência (execução real da autora, 10/11/2026, modo `original`, as 8 exportações de jan/2026):**
+16.845 registros ✓, 2.068 no corpus ✓, estratos 13/494/1.508/53 ✓, T\* 514/1.554/0 ✓, A\* 1.334/726/8 ✓,
+escore médio 43,23 / mediana 40,72 / desvio 9,29 ✓ — mas **11.546 únicos** contra 11.547 declarados.
+
+**Causa:** o script original atribui os campos a um DataFrame vazio; numa exportação **sem a coluna** de
+título (IEEE, 612 registros) o título fica `NaN`, enquanto títulos vazios em bases **com** a coluna viram
+`'Unknown'`. São dois grupos distintos na deduplicação por título, cada um com 1 sobrevivente. O pacote
+tratava ambos como `'Unknown'` (um grupo só) e perdia 1 registro. O teste de equivalência sintético não pegava
+o caso porque os dados sintéticos só tinham títulos ausentes por falta de coluna.
+
+**Correção:** a chave de deduplicação distingue "sem coluna de título" de "título vazio" (o texto exibido
+continua `'Unknown'`). Referência da correção: o **comportamento dos scripts originais**, não o número do
+artigo — `tests/test_equivalencia_titulos_ausentes.py` mostra pacote = scripts com os dois tipos de título
+ausente (antes: 416 × 417). O teste de equivalência original e o retrato de regressão continuam passando sem
+alteração. Esperado com os dados reais após a correção: 11.547 (a confirmar numa nova execução da autora).
+
+Com isso a diferença total de remoções fica 4.375 (etapa DOI: 3.836 duplicatas + 539 sem DOI) + 923 (título)
+= 5.298, igual ao declarado; a divisão 4.233/1.065 do relatório continua não correspondendo à execução.
+
+### Achado 12 — o texto metodológico da V3 (Perplexity) não descreve o que foi calculado
+Documento "Análise Cientométrica V3", seção "V3 - Resultado filtragem por LLM (PERPLEXITY)". Os números
+desse documento são reproduzidos pelo código (achado 11), mas o texto descreve regras diferentes:
+
+| Texto da V3 | Regra efetivamente executada |
+|---|---|
+| T\* = 1,0 se título **ou** resumo contém ambos os temas | apenas o título |
+| I ∈ {0; 0,5; 1}; M, O, C podem valer 0 | I ∈ {0; 1}; M, O, C ∈ {0,5; 1} (A\* só assume 0,625/0,75/0,875/1) |
+| filtro: "flood" + "previsão/forecasting" + IA; exclui insurance/mythology/psychology | listas de 18/20/20/20 termos e 15 de exclusão (inclui `dam`, `dike`, `levee`) |
+| dedup: 4.233 por DOI, 1.065 por título | 4.375 na etapa DOI (inclui 539 sem DOI), 923 por título |
+| WoS consultada (tabela V3: 1.784 + 4.123) | WoS **não** entrou nos 16.845 (falha de leitura `xlrd`, registrada no próprio documento) |
+
+Para a dissertação, a descrição do método deve seguir METHODOLOGY.md §2 (o que o código faz), não o texto da V3.
+
 ## 4. O que foi e o que não foi verificado
 
 | Verificação | Situação |
@@ -147,7 +181,7 @@ efetivamente usadas e as datas de exportação não estão registradas (o `log_b
 | Pacote × scripts originais, dados sintéticos | ✓ (teste preservado) |
 | Dashboard original × pacote original | ✓ (corrigido e testado) |
 | Fórmulas C*, R*, escore, estratos no corpus real publicado | ✓ 2.068/2.068 |
-| 16.845 → 11.547 → 2.068 com as exportações originais | **não executado** — arquivos indisponíveis aqui; teste pronto (`CIENTOMETRIA_EXPORTACOES_ORIGINAIS`) |
+| 16.845 → 11.547 → 2.068 com as exportações originais | **executado pela autora** (10/11/2026): tudo confere exceto 11.546 × 11.547 únicos, explicado e corrigido (achado 11); falta repetir a execução com a correção |
 | Divisão 4.233/1.065 | declarado inconsistente pelo notebook; não reverificado |
 | Decisões da sessão Perplexity | **pendente** (inacessível) |
 | Bibliometria × saídas originais do R (12 grupos de resultados) | ✓ idênticos com a réplica `compat_r`; diferenças do padrão explicadas (§7) |

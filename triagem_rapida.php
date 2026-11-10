@@ -492,7 +492,7 @@
         data.extras && data.extras.exclusao_por_trecho ? ('Exclusão por trecho de texto (dam/dike/levee dentro de outra palavra): ' + JSON.stringify(data.extras.exclusao_por_trecho)) : '',
         data.extras && data.extras.perdas_no_fluxo ? ('Perdas no fluxo: ' + JSON.stringify(data.extras.perdas_no_fluxo)) : '',
         data.extras && data.extras.sensibilidade_pesos ? ('Sensibilidade aos pesos (Núcleo A original): ' + JSON.stringify(data.extras.sensibilidade_pesos)) : '',
-        'Reconciliação (delta atual - alvo): ' + JSON.stringify(recon, null, 2)
+        'Diferença em relação às referências históricas do artigo (obtido − declarado; NÃO são metas — divergência é achado a investigar. "Após DOI" 12.612 é o valor declarado, que não corresponde à execução original): ' + JSON.stringify(recon, null, 2)
       ].filter(Boolean).join('\n');
       if (chart) chart.destroy();
       chart = new Chart(document.getElementById('nucleoChart'), {

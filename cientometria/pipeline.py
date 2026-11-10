@@ -35,6 +35,10 @@ def consolidar(frames: list, cfg: Config):
         raise ValueError("Nenhum registro lido: todos os arquivos estão vazios ou ilegíveis.")
     bruto = pd.concat(frames, ignore_index=True)
     bruto["title_normalized"] = bruto["title"].astype(str).str.lower().str.strip()
+    if "titulo_sem_coluna" in bruto:
+        # no script original esses títulos são NaN: grupo próprio, separado de 'unknown' (achado 11)
+        sem_coluna = bruto["titulo_sem_coluna"].fillna(False).astype(bool)
+        bruto.loc[sem_coluna, "title_normalized"] = "\x00titulo-sem-coluna"
     bruto["doi_chave"] = chave_doi(bruto["doi"], cfg)
     sem = bruto["doi_chave"] == ""
     sem_doi = int(sem.sum())
