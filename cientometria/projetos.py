@@ -186,13 +186,41 @@ class Projeto:
     def info(self) -> dict:
         return _ler_json(self.pasta / "projeto.json")
 
+    @staticmethod
+    def _validar_campos(campos: dict) -> dict:
+        """Tipos e tamanhos dos metadados editáveis (vindos da interface)."""
+        from .config import Config
+        out = {}
+        for k, v in campos.items():
+            if k == "nome":
+                if not isinstance(v, str) or not v.strip() or len(v) > 200:
+                    raise ValueError("Nome do projeto: texto de 1 a 200 caracteres.")
+                out[k] = v.strip()
+            elif k == "descricao":
+                if not isinstance(v, str) or len(v) > 5000:
+                    raise ValueError("Descrição: texto de até 5.000 caracteres.")
+                out[k] = v
+            elif k == "fontes_bibliograficas":
+                if (not isinstance(v, list) or len(v) > 50
+                        or not all(isinstance(x, str) and len(x) <= 100 for x in v)):
+                    raise ValueError("Fontes bibliográficas: até 50 textos de até 100 caracteres.")
+                out[k] = v
+            elif k == "configuracao_padrao":
+                if not isinstance(v, dict) or set(v) - {"modo"}:
+                    raise ValueError("Configuração padrão: só a chave 'modo'.")
+                Config.do_modo(v.get("modo", "original"))
+                out[k] = v
+            else:
+                raise ValueError(f"Campo não editável: {k}")
+        return out
+
     def atualizar(self, **campos):
-        permitidos = {"nome", "descricao", "fontes_bibliograficas", "configuracao_padrao"}
+        campos = self._validar_campos(campos)
         with _trava(self.pasta):
             info = self.info
-            info.update({k: v for k, v in campos.items() if k in permitidos})
+            info.update(campos)
             _json(self.pasta / "projeto.json", info)
-        self._evento("projeto_atualizado", campos=sorted(set(campos) & permitidos))
+        self._evento("projeto_atualizado", campos=sorted(campos))
 
     def _evento(self, tipo: str, **dados):
         linha = json.dumps({"quando": _agora(), "evento": tipo, **dados}, ensure_ascii=False, default=str) + "\n"

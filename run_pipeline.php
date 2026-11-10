@@ -46,7 +46,9 @@ try {
   ], JSON_UNESCAPED_UNICODE));
 
   $stderrPath = $dir . '/stderr.log';
-  $cmd = 'cd ' . escapeshellarg(__DIR__) . ' && python3 ' . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' '
+  $tempo = (int)(getenv('CIENTOMETRIA_TEMPO_MAX_S') ?: 3600);
+  $cmd = 'cd ' . escapeshellarg(__DIR__) . ' && timeout -k 10 ' . ($tempo + 30) . ' python3 '
+       . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' '
        . escapeshellarg($payloadPath) . ' 2>' . escapeshellarg($stderrPath);
   $output = [];
   $returnVar = 0;
@@ -61,7 +63,7 @@ if ($returnVar !== 0) {
   $linhas = array_values(array_filter(explode("\n", $stderr)));
   $ultima = $linhas ? end($linhas) : 'erro desconhecido';
   $ultima = str_replace([$dir, __DIR__], ['<tmp>', '<app>'], $ultima);
-  seg_negar(500, 'Falha no pipeline: ' . substr($ultima, 0, 500));
+  seg_negar($returnVar === 3 ? 422 : 500, 'Falha no pipeline: ' . substr($ultima, 0, 500));
 }
 
 $json = trim(implode("\n", $output));

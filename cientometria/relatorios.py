@@ -13,6 +13,32 @@ COLUNAS_EXPORTACAO = ["source_db", "bases_encontradas", "title", "year", "citati
                       "arquivo_origem", "linha_origem"]
 
 
+_INICIO_FORMULA = ("=", "+", "-", "@", "\t", "\r")
+
+
+def neutralizar_formulas_csv(df: pd.DataFrame) -> pd.DataFrame:
+    """Proteção contra injeção de fórmulas (CSV injection, OWASP): textos que começam com
+    = + - @ TAB CR recebem o prefixo ' nos CSVs de RELATÓRIO, que são abertos em planilhas.
+    Os dados brutos da execução (corpus.csv, consolidado.csv) não são alterados."""
+    out = df.copy()
+    for c in out.columns:
+        if out[c].dtype == object:
+            out[c] = out[c].map(lambda v: "'" + v if isinstance(v, str) and v.startswith(_INICIO_FORMULA) else v)
+    return out
+
+
+def _sem_formulas_xlsx(planilha) -> int:
+    """Força como TEXTO toda célula que o openpyxl interpretaria como fórmula
+    (strings que começam com '='). O conteúdo é preservado."""
+    n = 0
+    for linha in planilha.iter_rows():
+        for celula in linha:
+            if celula.data_type == "f":
+                celula.data_type = "s"
+                n += 1
+    return n
+
+
 def _fmt(n):
     return f"{n:,}".replace(",", ".") if isinstance(n, int) else str(n)
 
@@ -114,7 +140,7 @@ def exportar(res, manifesto: dict, biblio: dict, pasta, imagens: list | None = N
     if "csv" in formatos:
         (pasta / "csv").mkdir(exist_ok=True)
         for k, v in tabelas.items():
-            v.to_csv(pasta / "csv" / f"{k}.csv", index=False, encoding="utf-8")
+            neutralizar_formulas_csv(v).to_csv(pasta / "csv" / f"{k}.csv", index=False, encoding="utf-8")
         feitos.append(str(pasta / "csv"))
     if "xlsx" in formatos:
         destino = pasta / "resultados.xlsx"
@@ -126,6 +152,7 @@ def exportar(res, manifesto: dict, biblio: dict, pasta, imagens: list | None = N
                     nome = nome[:29] + str(len(usados))
                 usados.add(nome)
                 v.head(1_000_000).to_excel(xw, sheet_name=nome, index=False)
+                _sem_formulas_xlsx(xw.sheets[nome])
         feitos.append(str(destino))
     md_texto = relatorio_metodologico(manifesto, diagnosticos)
     if "md" in formatos:

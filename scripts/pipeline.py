@@ -18,7 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from cientometria import executar
-from cientometria.ingestao import carregar_fontes
+from cientometria.ingestao import ArquivoInvalido, carregar_fontes, validar_conteudo
+from cientometria.limites import aplicar as aplicar_limites
 from cientometria.parametros import config_de_parametros
 from cientometria.saida import resumo
 
@@ -31,6 +32,14 @@ def main():
     if not files:
         raise SystemExit("Nenhum arquivo recebido")
     params = payload.get("params", {}) or {}
+    aplicar_limites()
+    nomes = payload.get("names") or [f.name for f in files]
+    try:
+        for f, nome in zip(files, nomes):
+            validar_conteudo(f, nome)      # mesma validação da importação em projetos
+    except ArquivoInvalido as e:
+        print(f"ArquivoInvalido: {e}", file=sys.stderr)
+        sys.exit(3)                        # 3 = entrada rejeitada (o PHP devolve 422)
     cfg = config_de_parametros(params)
     bases, fontes = carregar_fontes(files, cfg, nomes=payload.get("names") or None)
     res = executar(bases, cfg)

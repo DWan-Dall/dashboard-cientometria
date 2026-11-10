@@ -26,7 +26,9 @@ function chamarPython($acao, $dados, $dirUpload = null) {
       // o Python só aceita importar arquivos de dentro deste diretório
       $env .= ' CIENTOMETRIA_DIR_IMPORTACAO=' . escapeshellarg($dirUpload);
     }
-    $cmd = 'cd ' . escapeshellarg(__DIR__) . ' && ' . $env . ' python3 -m cientometria.api '
+    $tempo = (int)(getenv('CIENTOMETRIA_TEMPO_MAX_S') ?: 3600);
+    $cmd = 'cd ' . escapeshellarg(__DIR__) . ' && ' . $env . ' timeout -k 10 ' . ($tempo + 30)
+         . ' python3 -m cientometria.api '
          . escapeshellarg($acao) . ' ' . escapeshellarg($tmp) . ' 2>' . escapeshellarg($dir . '/stderr.log');
     $saida = [];
     $rc = 0;

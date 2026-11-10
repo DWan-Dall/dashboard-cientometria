@@ -52,7 +52,8 @@ class ArquivoInvalido(ValueError):
     """Conteúdo incompatível com a extensão ou potencialmente perigoso."""
 
 
-LIMITE_DESCOMPACTADO = 1024 ** 3      # 1 GiB por planilha .xlsx
+# por planilha .xlsx; configurável (CIENTOMETRIA_MAX_MB_DESCOMPACTADO), padrão 512 MiB
+LIMITE_DESCOMPACTADO = int(os.environ.get("CIENTOMETRIA_MAX_MB_DESCOMPACTADO", "512")) * 1024 * 1024
 RAZAO_MAXIMA_COMPRESSAO = 200         # acima disso, suspeita de "zip bomb"
 
 
@@ -88,6 +89,12 @@ def validar_conteudo(caminho, nome: str | None = None) -> None:
                 raise ArquivoInvalido(f"{nome}: tamanho descompactado suspeito ({total} bytes)")
             if any(i.filename.startswith("/") or ".." in Path(i.filename).parts for i in infos):
                 raise ArquivoInvalido(f"{nome}: caminhos internos inválidos")
+            # planilhas legítimas não declaram DTD; DOCTYPE abre caminho para XXE/"billion laughs"
+            for i in infos:
+                if i.filename.endswith((".xml", ".rels")):
+                    with z.open(i) as f:
+                        if b"<!DOCTYPE" in f.read(4096).upper():
+                            raise ArquivoInvalido(f"{nome}: XML com DOCTYPE não é aceito ({i.filename})")
         return
     if suf == ".xls":
         if not cab.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):

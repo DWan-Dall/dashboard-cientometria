@@ -117,10 +117,12 @@ def principal_api(argv):
     if len(argv) < 2:
         raise SystemExit("Uso: python -m cientometria.api <acao> <payload.json>")
     dados = json.loads(Path(argv[1]).read_text(encoding="utf-8")) if len(argv) > 1 else {}
+    from .limites import aplicar
+    aplicar()
     try:
         out = despachar(argv[0], dados)
         print(json.dumps(out, ensure_ascii=False, default=str))
-    except Exception as e:  # noqa: BLE001 — erro devolvido como JSON para a interface
+    except (Exception, MemoryError) as e:  # noqa: BLE001 — erro devolvido como JSON para a interface
         msg = f"{type(e).__name__}: {e}"
         for raiz in filter(None, [dados.get("raiz"), os.environ.get("CIENTOMETRIA_PROJETOS"),
                                   os.environ.get("CIENTOMETRIA_DIR_IMPORTACAO"), str(Path.cwd())]):

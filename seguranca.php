@@ -9,6 +9,10 @@
 //   CIENTOMETRIA_SENHA_HASH (gerado com password_hash) — autenticação HTTP Basic.
 //   CIENTOMETRIA_PERMITIR_SEM_SENHA=1 desliga a exigência (use só atrás de porta
 //   publicada em 127.0.0.1, como no docker-compose.yml).
+// - Cabeçalho Host restrito (contra DNS rebinding): só localhost/127.0.0.1/[::1], salvo os
+//   nomes listados em CIENTOMETRIA_HOSTS (separados por vírgula).
+// - Requisição com X-Forwarded-For/Forwarded/X-Real-IP (passou por proxy reverso) nunca é
+//   tratada como local: atrás de proxy, credenciais são obrigatórias.
 //
 // Não há regra científica aqui.
 
@@ -44,12 +48,48 @@ if (!defined('CIENTOMETRIA_SEGURANCA')) {
     exit;
   }
 
+  function seg_via_proxy() {
+    foreach (['HTTP_X_FORWARDED_FOR', 'HTTP_FORWARDED', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_HOST'] as $k) {
+      if (!empty($_SERVER[$k])) return true;
+    }
+    return false;
+  }
+
+  // Nome de host sem porta, em minúsculas ('[::1]:8000' -> '::1').
+  function seg_host_sem_porta($h) {
+    $h = strtolower(trim((string)$h));
+    if ($h === '') return '';
+    if ($h[0] === '[') {
+      $fim = strpos($h, ']');
+      return $fim === false ? '' : substr($h, 1, $fim - 1);
+    }
+    $p = strrpos($h, ':');
+    return $p === false ? $h : substr($h, 0, $p);
+  }
+
+  function seg_host_permitido() {
+    $host = seg_host_sem_porta($_SERVER['HTTP_HOST'] ?? '');
+    $ok = ['localhost', '127.0.0.1', '::1'];
+    $extra = getenv('CIENTOMETRIA_HOSTS');
+    if ($extra) {
+      foreach (explode(',', $extra) as $h) {
+        $h = strtolower(trim($h));
+        if ($h !== '') $ok[] = $h;
+      }
+    }
+    return $host !== '' && in_array($host, $ok, true);
+  }
+
   function seg_ip_local() {
+    if (seg_via_proxy()) return false;
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
     return $ip === '127.0.0.1' || $ip === '::1' || strpos($ip, '127.') === 0 || $ip === '::ffff:127.0.0.1';
   }
 
   function seg_autenticar($json = true) {
+    if (!seg_host_permitido()) {
+      seg_negar(421, 'Host não permitido. Acesse por localhost/127.0.0.1 ou configure CIENTOMETRIA_HOSTS.', $json);
+    }
     $usuario = getenv('CIENTOMETRIA_USUARIO');
     $hash = getenv('CIENTOMETRIA_SENHA_HASH');
     if ($usuario && $hash) {
