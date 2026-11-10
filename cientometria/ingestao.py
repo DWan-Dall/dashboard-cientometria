@@ -48,6 +48,59 @@ class Fonte:
         return d
 
 
+class ArquivoInvalido(ValueError):
+    """Conteúdo incompatível com a extensão ou potencialmente perigoso."""
+
+
+LIMITE_DESCOMPACTADO = 1024 ** 3      # 1 GiB por planilha .xlsx
+RAZAO_MAXIMA_COMPRESSAO = 200         # acima disso, suspeita de "zip bomb"
+
+
+def validar_conteudo(caminho, nome: str | None = None) -> None:
+    """Confere se o conteúdo corresponde à extensão. Lança ArquivoInvalido.
+
+    - .xlsx: ZIP válido com [Content_Types].xml, tamanho descompactado e razão de
+      compressão limitados; .xls: assinatura OLE2.
+    - texto (.csv/.tsv/.txt/.ris/.bib/.nbib): sem bytes nulos e majoritariamente imprimível.
+    Não altera o arquivo nem a leitura do modo original."""
+    import zipfile
+    p = Path(caminho)
+    nome = nome or p.name
+    suf = Path(nome).suffix.lower()
+    if suf not in FORMATOS:
+        raise ArquivoInvalido(f"Extensão não aceita: {nome}")
+    if p.is_symlink() or not p.is_file():
+        raise ArquivoInvalido(f"Não é um arquivo regular: {nome}")
+    with open(p, "rb") as f:
+        cab = f.read(1 << 20)
+    if not cab:
+        raise ArquivoInvalido(f"Arquivo vazio: {nome}")
+    if suf == ".xlsx":
+        if not zipfile.is_zipfile(p):
+            raise ArquivoInvalido(f"{nome}: não é uma planilha .xlsx válida (ZIP)")
+        with zipfile.ZipFile(p) as z:
+            infos = z.infolist()
+            if "[Content_Types].xml" not in {i.filename for i in infos}:
+                raise ArquivoInvalido(f"{nome}: ZIP sem estrutura de planilha")
+            total = sum(i.file_size for i in infos)
+            comp = sum(i.compress_size for i in infos) or 1
+            if total > LIMITE_DESCOMPACTADO or total / comp > RAZAO_MAXIMA_COMPRESSAO:
+                raise ArquivoInvalido(f"{nome}: tamanho descompactado suspeito ({total} bytes)")
+            if any(i.filename.startswith("/") or ".." in Path(i.filename).parts for i in infos):
+                raise ArquivoInvalido(f"{nome}: caminhos internos inválidos")
+        return
+    if suf == ".xls":
+        if not cab.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+            raise ArquivoInvalido(f"{nome}: não é uma planilha .xls válida")
+        return
+    if b"\x00" in cab:
+        raise ArquivoInvalido(f"{nome}: contém bytes nulos (arquivo binário com extensão de texto)")
+    texto = cab.decode("utf-8", errors="replace")
+    imprimiveis = sum(ch.isprintable() or ch in "\r\n\t" for ch in texto)
+    if imprimiveis / max(len(texto), 1) < 0.95:
+        raise ArquivoInvalido(f"{nome}: conteúdo não parece texto")
+
+
 def sha256_arquivo(caminho) -> str:
     h = hashlib.sha256()
     with open(caminho, "rb") as f:

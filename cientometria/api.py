@@ -15,6 +15,7 @@ Linha de comando para pesquisadores (sem dashboard):
 from __future__ import annotations
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -97,6 +98,8 @@ def despachar(acao: str, dados: dict) -> dict:
         return p.comparar(dados["a"], dados["b"])
     if acao == "reproduzir":
         return p.reproduzir(dados["id"])
+    if acao == "verificar_execucao":
+        return p.verificar_execucao(dados["id"])
     if acao == "comparar_modos":
         from .pipeline import executar
         bases, fontes = p.carregar(Config.original(), dados.get("arquivos"))
@@ -118,7 +121,11 @@ def principal_api(argv):
         out = despachar(argv[0], dados)
         print(json.dumps(out, ensure_ascii=False, default=str))
     except Exception as e:  # noqa: BLE001 — erro devolvido como JSON para a interface
-        print(json.dumps({"erro": f"{type(e).__name__}: {e}"}, ensure_ascii=False))
+        msg = f"{type(e).__name__}: {e}"
+        for raiz in filter(None, [dados.get("raiz"), os.environ.get("CIENTOMETRIA_PROJETOS"),
+                                  os.environ.get("CIENTOMETRIA_DIR_IMPORTACAO"), str(Path.cwd())]):
+            msg = msg.replace(str(raiz), "<…>")
+        print(json.dumps({"erro": msg[:1000]}, ensure_ascii=False))
         sys.exit(1)
 
 

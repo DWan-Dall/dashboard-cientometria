@@ -1,8 +1,10 @@
+<?php require __DIR__ . '/seguranca.php'; $csrf = seg_pagina(); ?>
 <!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="csrf-token" content="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>" />
 <title>Plataforma de Cientometria</title>
 <style>
   :root { --bg:#0f172a; --card:#111827; --borda:#243041; --muted:#94a3b8; --text:#e5e7eb;
@@ -160,7 +162,8 @@
     </section>
   </main>
 </div>
-<script>
+<script nonce="<?= htmlspecialchars(seg_nonce(), ENT_QUOTES) ?>">
+const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 const E = {projeto: null, execucao: null, dados: null};
 const $ = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -168,8 +171,9 @@ const fmt = v => typeof v === 'number' ? v.toLocaleString('pt-BR', {maximumFract
 
 function msg(t, tipo='aviso') { $('msg').innerHTML = t ? `<div class="${tipo}">${t}</div>` : ''; }
 async function api(acao, dados = {}, form = null) {
-  const r = await fetch('api.php?acao=' + acao, form ? {method:'POST', body:form}
-    : {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(dados)});
+  const h = {'X-CSRF-Token': CSRF};
+  const r = await fetch('api.php?acao=' + encodeURIComponent(acao), form ? {method:'POST', headers:h, body:form, credentials:'same-origin'}
+    : {method:'POST', headers:{...h, 'Content-Type':'application/json'}, body: JSON.stringify(dados), credentials:'same-origin'});
   const t = await r.text(); let j;
   try { j = JSON.parse(t); } catch (_) { throw new Error('Resposta não-JSON: ' + t.slice(0, 300)); }
   if (j.erro) throw new Error(j.erro);
@@ -196,7 +200,7 @@ const carregarProjetos = seguro(async () => {
   const j = await api('listar_projetos');
   $('tbProjetos').innerHTML = j.projetos.length ? `<table><thead><tr><th>projeto</th><th>descrição</th><th>arquivos</th><th>execuções</th><th></th></tr></thead><tbody>${
     j.projetos.map(p => `<tr><td>${esc(p.nome)}<br><span class="small">${esc(p.slug)}</span></td><td>${esc(p.descricao)}</td><td>${p.n_arquivos}</td><td>${p.n_execucoes}</td>
-    <td><button class="btn sec" onclick="abrirProjeto('${esc(p.slug)}')">abrir</button></td></tr>`).join('')}</tbody></table>` : '<p class="small">Nenhum projeto.</p>';
+    <td><button class="btn sec" data-acao="abrirProjeto" data-arg="${esc(p.slug)}">abrir</button></td></tr>`).join('')}</tbody></table>` : '<p class="small">Nenhum projeto.</p>';
 });
 $('btCriar').onclick = seguro(async () => {
   if (!$('pNome').value.trim()) throw new Error('Informe o nome.');
@@ -220,7 +224,7 @@ window.abrirProjeto = seguro(async slug => {
 function renderArquivos(arqs) {
   $('tbArquivos').innerHTML = arqs.length ? `<table><thead><tr><th>arquivo</th><th>SHA-256</th><th>bytes</th><th>base forçada</th><th>importado em</th><th>situação</th><th></th></tr></thead><tbody>${
     arqs.map(a => `<tr><td>${esc(a.nome)}</td><td><code>${esc(a.sha256.slice(0, 16))}…</code></td><td>${fmt(a.bytes)}</td><td>${esc(a.base || '—')}</td><td>${esc(a.importado_em)}</td>
-      <td>${a.ativo === false ? 'desativado' : 'ativo'}</td><td>${a.ativo === false ? '' : `<button class="btn sec" onclick="desativar('${esc(a.id)}')">desativar</button>`}</td></tr>`).join('')}</tbody></table>`
+      <td>${a.ativo === false ? 'desativado' : 'ativo'}</td><td>${a.ativo === false ? '' : `<button class="btn sec" data-acao="desativar" data-arg="${esc(a.id)}">desativar</button>`}</td></tr>`).join('')}</tbody></table>`
     : '<p class="small">Nenhum arquivo importado.</p>';
 }
 $('btImportar').onclick = seguro(async () => {
@@ -307,7 +311,7 @@ function renderExecucoes(ex) {
   $('tbExec').innerHTML = ex.length ? `<table><thead><tr><th>id</th><th>data (UTC)</th><th>rótulo</th><th>modo</th><th>versão</th><th>únicos</th><th>corpus</th><th>A/B/P/D</th><th></th></tr></thead><tbody>${
     ex.slice().reverse().map(e => `<tr><td><code>${esc(e.id)}</code></td><td>${esc(e.data_hora_utc)}</td><td>${esc(e.rotulo)}</td><td>${esc(e.modo)}${e.personalizada ? ' *' : ''}</td><td>${esc(e.versao_metodo)}</td>
       <td>${fmt(e.contagens.unicos)}</td><td>${fmt(e.contagens.corpus)}</td><td>${Object.values(e.estratos).join(' / ')}</td>
-      <td><button class="btn sec" onclick="abrirExecucao('${esc(e.id)}')">abrir</button> <button class="btn sec" onclick="reproduzir('${esc(e.id)}')">reproduzir</button></td></tr>`).join('')}</tbody></table><p class="small">* configuração personalizada</p>`
+      <td><button class="btn sec" data-acao="abrirExecucao" data-arg="${esc(e.id)}">abrir</button> <button class="btn sec" data-acao="reproduzir" data-arg="${esc(e.id)}">reproduzir</button></td></tr>`).join('')}</tbody></table><p class="small">* configuração personalizada</p>`
     : '<p class="small">Nenhuma execução.</p>';
   const ops = ex.map(e => `<option value="${esc(e.id)}">${esc(e.id)} · ${esc(e.modo)} · ${esc(e.data_hora_utc)}</option>`).join('');
   $('cmpA').innerHTML = ops; $('cmpB').innerHTML = ops;
@@ -329,6 +333,13 @@ $('btCmp').onclick = seguro(async () => {
     + '<h3>Arquivos diferentes</h3>' + tabela(Object.entries(c.arquivos).map(([k, v]) => ({arquivo: k, a: v.a, b: v.b})));
 });
 
+// ações dos botões gerados dinamicamente (sem handlers inline: CSP com nonce)
+const ACOES_BOTAO = {abrirProjeto: x => abrirProjeto(x), desativar: x => desativar(x),
+                     abrirExecucao: x => abrirExecucao(x), reproduzir: x => reproduzir(x)};
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-acao]');
+  if (b && ACOES_BOTAO[b.dataset.acao]) ACOES_BOTAO[b.dataset.acao](b.dataset.arg);
+});
 habilitar(); carregarProjetos();
 </script>
 </body>

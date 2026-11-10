@@ -51,7 +51,8 @@ def resumo(res, fontes=None, bases=None, n_sensibilidade: int = 2000, limite_top
                         "r_norm": float(r["R_norm"]), "t_score": float(r["T_score"]), "a_score": float(r["A_score"]),
                         "source_db": str(r.get("source_db", "")), "bases": str(r.get("bases_encontradas", ""))})
         if nucleos["Núcleo A"] and n_sensibilidade:
-            extras["sensibilidade_pesos"] = robustez.sensibilidade_pesos(res, n=int(n_sensibilidade))
+            n = max(0, min(int(n_sensibilidade), 20000))  # limite contra uso excessivo de CPU
+            extras["sensibilidade_pesos"] = robustez.sensibilidade_pesos(res, n=n)
     extras["exclusao_por_trecho"] = diagnostico.exclusao_por_trecho(res)
     extras["perdas_no_fluxo"] = diagnostico.perdas_no_fluxo(res)
     extras["criterios_consolidacao"] = criterios(cfg)

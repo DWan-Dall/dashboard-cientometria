@@ -1,4 +1,8 @@
 <?php
+// Triagem rápida (sem projeto): recebe arquivos e repassa a scripts/pipeline.py.
+// A triagem tem uma única implementação: o pacote Python `cientometria`.
+// O antigo motor R (scripts/pipeline.R) implementava regras próprias e foi desativado.
+require __DIR__ . '/seguranca.php';
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 
@@ -17,119 +21,52 @@ function parseSizeToBytes($value) {
 $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
 $postMax = parseSizeToBytes(ini_get('post_max_size'));
 if ($postMax > 0 && $contentLength > $postMax) {
-  http_response_code(413);
-  echo json_encode([
-    'error' => 'Arquivo(s) excedem o limite de upload do PHP.',
-    'details' => 'Aumente post_max_size/upload_max_filesize (ex.: 128M).'
-  ], JSON_UNESCAPED_UNICODE);
-  exit;
+  seg_negar(413, 'Arquivo(s) excedem o limite de upload do PHP (post_max_size/upload_max_filesize).');
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-  http_response_code(405);
-  echo json_encode(['error' => 'Método não permitido']);
-  exit;
-}
+seg_exigir_post_protegido();
 
-if (!isset($_FILES['files'])) {
-  http_response_code(400);
-  echo json_encode(['error' => 'Nenhum arquivo enviado.']);
-  exit;
-}
-
-// A triagem tem uma única implementação: o pacote Python `cientometria`.
-// O antigo motor R (scripts/pipeline.R) implementava regras próprias e foi desativado.
 $engine = $_POST['engine'] ?? 'python';
 if ($engine !== 'python') {
-  http_response_code(400);
-  echo json_encode(['error' => 'Motor R desativado para a triagem: o método só é executado pelo pacote Python cientometria (ver ARCHITECTURE.md).'], JSON_UNESCAPED_UNICODE);
-  exit;
+  seg_negar(400, 'Motor R desativado para a triagem: o método só é executado pelo pacote Python cientometria (ver ARCHITECTURE.md).');
 }
 
-$paramsRaw = $_POST['params'] ?? '{}';
-$params = json_decode($paramsRaw, true);
+$params = json_decode($_POST['params'] ?? '{}', true);
 if (!is_array($params)) { $params = []; }
 
-$uploadDir = __DIR__ . '/tmp_uploads';
-$plotDir = $uploadDir . '/plots';
-if (!is_dir($plotDir)) {
-  mkdir($plotDir, 0777, true);
+// Uploads e payload ficam FORA do diretório servido pela web.
+$dir = seg_diretorio_temporario('rapida_');
+try {
+  $arquivos = seg_receber_uploads($dir);
+  $payloadPath = $dir . '/payload.json';
+  file_put_contents($payloadPath, json_encode([
+    'files' => array_column($arquivos, 'caminho'),
+    'names' => array_column($arquivos, 'nome'),   // nome original: tipo de base e ordem canônica
+    'params' => $params,
+  ], JSON_UNESCAPED_UNICODE));
+
+  $stderrPath = $dir . '/stderr.log';
+  $cmd = 'cd ' . escapeshellarg(__DIR__) . ' && python3 ' . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' '
+       . escapeshellarg($payloadPath) . ' 2>' . escapeshellarg($stderrPath);
+  $output = [];
+  $returnVar = 0;
+  exec($cmd, $output, $returnVar);
+  $stderr = file_exists($stderrPath) ? trim(file_get_contents($stderrPath)) : '';
+} finally {
+  seg_remover_diretorio($dir);
 }
-
-$paths = [];
-$originalNames = [];
-$names = $_FILES['files']['name'];
-$tmpNames = $_FILES['files']['tmp_name'];
-$errors = $_FILES['files']['error'];
-
-for ($i = 0; $i < count($names); $i++) {
-  if ($errors[$i] !== UPLOAD_ERR_OK) {
-    continue;
-  }
-  $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($names[$i]));
-  $target = $uploadDir . '/' . uniqid('upl_', true) . '_' . $safeName;
-  if (move_uploaded_file($tmpNames[$i], $target)) {
-    $paths[] = $target;
-    $originalNames[] = $safeName;  // nome original: define tipo de base e ordem canônica
-  }
-}
-
-if (count($paths) === 0) {
-  http_response_code(400);
-  echo json_encode(['error' => 'Falha no upload dos arquivos.']);
-  exit;
-}
-
-$payloadPath = $uploadDir . '/' . uniqid('payload_', true) . '.json';
-$payload = [
-  'files' => $paths,
-  'names' => $originalNames,
-  'plot_dir' => $plotDir,
-  'plot_url_prefix' => 'tmp_uploads/plots',
-  'params' => $params
-];
-file_put_contents($payloadPath, json_encode($payload, JSON_UNESCAPED_UNICODE));
-
-$stderrPath = $uploadDir . '/' . uniqid('stderr_', true) . '.log';
-$cmd = 'python3 ' . escapeshellarg(__DIR__ . '/scripts/pipeline.py') . ' ' . escapeshellarg($payloadPath) . ' 2>' . escapeshellarg($stderrPath);
-
-$output = [];
-$returnVar = 0;
-exec($cmd, $output, $returnVar);
-$stderr = file_exists($stderrPath) ? trim(file_get_contents($stderrPath)) : '';
-@unlink($stderrPath);
-
-foreach ($paths as $p) {
-  @unlink($p);
-}
-@unlink($payloadPath);
 
 if ($returnVar !== 0) {
-  http_response_code(500);
-  $msg = trim(implode("\n", $output));
-  if ($stderr !== '') {
-    $msg = $msg !== '' ? $msg . "\n" . $stderr : $stderr;
-  }
-  echo json_encode(['error' => "Falha no pipeline ({$engine}): " . $msg]);
-  exit;
+  // a última linha do stderr costuma ter a mensagem útil; não devolve caminhos completos
+  $linhas = array_values(array_filter(explode("\n", $stderr)));
+  $ultima = $linhas ? end($linhas) : 'erro desconhecido';
+  $ultima = str_replace([$dir, __DIR__], ['<tmp>', '<app>'], $ultima);
+  seg_negar(500, 'Falha no pipeline: ' . substr($ultima, 0, 500));
 }
 
 $json = trim(implode("\n", $output));
-if ($json === '') {
-  http_response_code(500);
-  echo json_encode(['error' => 'Pipeline não retornou conteúdo JSON.']);
-  exit;
-}
-
 $decoded = json_decode($json, true);
 if (!$decoded) {
-  http_response_code(500);
-  echo json_encode([
-    'error' => 'Resposta inválida do pipeline.',
-    'raw_output_preview' => substr($json, 0, 500),
-    'stderr_preview' => substr($stderr, 0, 500)
-  ], JSON_UNESCAPED_UNICODE);
-  exit;
+  seg_negar(500, 'Resposta inválida do pipeline.');
 }
-
 echo json_encode($decoded, JSON_UNESCAPED_UNICODE);

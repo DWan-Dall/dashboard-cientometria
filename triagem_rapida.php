@@ -1,11 +1,11 @@
-<?php
-?>
+<?php require __DIR__ . '/seguranca.php'; $csrf = seg_pagina(); ?>
 <!doctype html>
 <html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="<?= htmlspecialchars($csrf, ENT_QUOTES) ?>" />
   <title>Triagem rápida — Cientometria</title>
   <style>
     :root {
@@ -333,8 +333,9 @@
   </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
+  <script src="vendor/chart-4.4.1.umd.js" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG" nonce="<?= htmlspecialchars(seg_nonce(), ENT_QUOTES) ?>"></script>
+  <script nonce="<?= htmlspecialchars(seg_nonce(), ENT_QUOTES) ?>">
+    const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const fileInput = document.getElementById('fileInput');
     const runBtn = document.getElementById('runBtn');
     const statusEl = document.getElementById('status');
@@ -425,6 +426,8 @@
       try {
         const res = await fetch('run_pipeline.php', {
           method: 'POST',
+          headers: {'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content},
+          credentials: 'same-origin',
           body: fd
         });
         const raw = await res.text();
@@ -445,7 +448,7 @@
     });
 
     function kpi(label, value) {
-      return `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+      return `<div class="kpi"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div></div>`;
     }
 
     function render(data) {
@@ -538,13 +541,13 @@
       doiRemovedBody.innerHTML = '';
       for (const r of (ded.doi_removed || [])) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.title || ''}</td><td>${r.doi || ''}</td><td>${r.year ?? ''}</td><td>${r.source_file || ''}</td>`;
+        tr.innerHTML = `<td>${escapeHtml(r.title || '')}</td><td>${escapeHtml(r.doi || '')}</td><td>${escapeHtml(r.year ?? '')}</td><td>${escapeHtml(r.source_file || '')}</td>`;
         doiRemovedBody.appendChild(tr);
       }
       titleRemovedBody.innerHTML = '';
       for (const r of (ded.title_removed || [])) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.title || ''}</td><td>${r.doi || ''}</td><td>${r.year ?? ''}</td><td>${r.source_file || ''}</td>`;
+        tr.innerHTML = `<td>${escapeHtml(r.title || '')}</td><td>${escapeHtml(r.doi || '')}</td><td>${escapeHtml(r.year ?? '')}</td><td>${escapeHtml(r.source_file || '')}</td>`;
         titleRemovedBody.appendChild(tr);
       }
 
@@ -581,11 +584,11 @@
         const tr = document.createElement('tr');
         const cls = r.nucleo === 'Núcleo A' ? 'nA' : r.nucleo === 'Núcleo B' ? 'nB' : r.nucleo === 'Periférico' ? 'nP' : 'nD';
         tr.innerHTML = `
-          <td>${r.title || ''}</td>
-          <td>${r.year ?? ''}</td>
-          <td>${r.citations ?? ''}</td>
-          <td>${r.doi || ''}</td>
-          <td><span class="tag ${cls}">${r.nucleo}</span></td>
+          <td>${escapeHtml(r.title || '')}</td>
+          <td>${escapeHtml(r.year ?? '')}</td>
+          <td>${escapeHtml(r.citations ?? '')}</td>
+          <td>${escapeHtml(r.doi || '')}</td>
+          <td><span class="tag ${cls}">${escapeHtml(r.nucleo)}</span></td>
           <td>${Number(r.c_norm ?? 0).toFixed(3)}</td>
           <td>${Number(r.r_norm ?? 0).toFixed(3)}</td>
           <td>${Number(r.t_score ?? 0).toFixed(3)}</td>
