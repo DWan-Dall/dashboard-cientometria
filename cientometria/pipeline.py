@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import pandas as pd
 from .config import Config
 from . import entrada, nucleo
+from .consolidacao import chave_doi, anotar_proveniencia
 
 
 @dataclass
@@ -15,27 +16,35 @@ class Resultado:
     contagens: dict = field(default_factory=dict)
 
     def estratos(self) -> dict:
+        if "fascia" not in self.corpus:
+            return {k: 0 for k in ["Núcleo A", "Núcleo B", "Periférico", "Descarte"]}
         return {k: int((self.corpus["fascia"] == k).sum())
                 for k in ["Núcleo A", "Núcleo B", "Periférico", "Descarte"]}
 
 
 def consolidar(frames: list, cfg: Config):
-    """Deduplica em duas etapas (DOI, depois título). Devolve (df, contagens).
+    """Deduplica em duas etapas (DOI, depois título). Devolve (bruto, df, contagens).
 
-    Modo original: a etapa de DOI mantém apenas linhas COM DOI (descarta as sem DOI).
-    Com cfg.manter_sem_doi=True, registros sem DOI são mantidos e passam só pela
-    deduplicação por título; títulos 'Unknown'/vazios nunca são colapsados entre si."""
+    Modo original: a etapa de DOI mantém apenas linhas COM DOI (descarta as sem DOI) e
+    compara o DOI como texto bruto. Com cfg.manter_sem_doi=True, registros sem DOI são
+    mantidos e passam só pela deduplicação por título; títulos 'Unknown'/vazios nunca são
+    colapsados entre si. Com cfg.normalizar_doi=True, a comparação usa o DOI normalizado
+    (a coluna `doi` exibida não é alterada)."""
     frames = [f for f in frames if len(f) > 0]
+    if not frames:
+        raise ValueError("Nenhum registro lido: todos os arquivos estão vazios ou ilegíveis.")
     bruto = pd.concat(frames, ignore_index=True)
     bruto["title_normalized"] = bruto["title"].astype(str).str.lower().str.strip()
-    sem_doi = int((bruto["doi"] == "").sum())
-    com_doi = bruto[bruto["doi"] != ""]
-    dup_doi = int(com_doi.duplicated(subset=["doi"]).sum())
+    bruto["doi_chave"] = chave_doi(bruto["doi"], cfg)
+    sem = bruto["doi_chave"] == ""
+    sem_doi = int(sem.sum())
+    com_doi = bruto[~sem]
+    dup_doi = int(com_doi.duplicated(subset=["doi_chave"]).sum())
     if cfg.manter_sem_doi:
-        a = pd.concat([com_doi.drop_duplicates(subset=["doi"], keep="first"),
-                       bruto[bruto["doi"] == ""]]).sort_index()
+        a = pd.concat([com_doi.drop_duplicates(subset=["doi_chave"], keep="first"),
+                       bruto[sem]]).sort_index()
     else:
-        a = com_doi.drop_duplicates(subset=["doi"], keep="first")
+        a = com_doi.drop_duplicates(subset=["doi_chave"], keep="first")
     apos_doi = len(a)
     if cfg.manter_sem_doi:
         sem_titulo = a["title_normalized"].isin(["", "unknown"])
@@ -52,11 +61,12 @@ def consolidar(frames: list, cfg: Config):
 
 
 def executar(bases: dict, cfg: Config | None = None) -> Resultado:
-    """bases: {rótulo: (DataFrame bruto, tipo)} — ver entrada.ler_pasta()."""
+    """bases: {rótulo: (DataFrame bruto, tipo)} — ver entrada.ler_pasta() ou ingestao.carregar_fontes()."""
     cfg = cfg or Config.original()
     frames = [entrada.normalizar(df, rot, tipo, cfg) for rot, (df, tipo) in bases.items()]
     bruto, cons, contagens = consolidar(frames, cfg)
     cons = nucleo.aplicar_filtros(cons, cfg)
+    cons = anotar_proveniencia(cons, bruto)
     cand = nucleo.candidatos(cons)
     exp = nucleo.nucleo_expandido(cons)
     contagens.update({
