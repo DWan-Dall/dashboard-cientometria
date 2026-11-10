@@ -79,8 +79,8 @@ def _pdf(pasta: Path, manifesto: dict, md_texto: str, imagens: list) -> Path:
     from matplotlib.backends.backend_pdf import PdfPages
     destino = pasta / "relatorio.pdf"
     linhas = []
-    for l in md_texto.splitlines():
-        linhas += textwrap.wrap(l, 110) or [""]
+    for linha in md_texto.splitlines():
+        linhas += textwrap.wrap(linha, 110) or [""]
     with PdfPages(destino) as pdf:
         for i in range(0, len(linhas), 62):
             fig = plt.figure(figsize=(8.27, 11.69))

@@ -15,6 +15,21 @@
 - [ ] Corrigir o `A_score` corrompido no CSV do repositório `analise-aprofundada-v3` (no próprio repositório,
       pela autora) e regenerar `10_scores/` a partir do XLSX correto.
 
+## Verificações da rodada 2 (10/11/2026)
+
+- [x] Auditoria de segurança da interface/API: 10 achados corrigidos (docs/AUDITORIA.md §5), 38 testes.
+- [x] Persistência: concorrência, falhas, integridade, recuperação (§6), 12 testes.
+- [x] Docker: build, inicialização com compose, testes dentro do contêiner e fim a fim.
+- [x] Bibliometria × saídas originais do R: 12 grupos idênticos via `compat_r` (§7), 20 testes.
+- [x] ruff, bandit, pip-audit; CI no GitHub Actions (`.github/workflows/ci.yml`).
+- [ ] **Confirmar a primeira execução do CI no GitHub** (os jobs foram simulados localmente; o PR é a
+      primeira execução real nos runners).
+- [ ] Executar `tests/test_comparacao_r.py` e `tests/test_dados_reais.py` em máquina com os dados (não
+      rodam no CI porque os dados não são versionados).
+- [ ] Revisão de segurança por outra pessoa (este relatório foi produzido por quem também escreveu as correções).
+- [ ] Definir política de acesso para uso em servidor compartilhado: HTTPS (proxy reverso), credenciais
+      fortes, limite de taxa; hoje o modelo é uso local ou atrás de 127.0.0.1.
+
 ## Funcionalidades
 
 - [ ] Gravar decisões da revisão de duplicatas pela interface (hoje: CSV com coluna `decisao`).
@@ -24,10 +39,14 @@
 - [ ] Importar exportações OpenAlex via API (abstract em índice invertido).
 - [ ] Validação externa (`validacao.py`) pela interface, com upload da lista de referências.
 - [ ] Fila de execução assíncrona para corpora muito grandes (hoje a requisição HTTP espera o término).
-- [ ] Autenticação, se o dashboard for exposto fora de `localhost`.
+- [x] Autenticação (HTTP Basic) e bloqueio de acesso remoto sem credenciais.
 
 ## Infraestrutura
 
-- [ ] Verificar `docker build` (não havia daemon Docker no ambiente desta implementação).
-- [ ] CI (GitHub Actions) rodando `pytest` e `php -l`.
+- [x] `docker build` verificado (rodada 2). Se o Docker Hub limitar requisições, use
+      `--build-arg IMAGEM_BASE=mirror.gcr.io/library/php:8.3-cli-bookworm`.
+- [x] CI (GitHub Actions): testes Python 3.11/3.12, ruff, bandit, pip-audit, `php -l`, arquivos
+      congelados, ausência de dados licenciados, build e inicialização do Docker.
+- [ ] Hashes nas dependências (`pip-compile --generate-hashes`) para instalação verificável.
+- [ ] Mover JavaScript inline das páginas para arquivos estáticos (o CSP já usa nonce; isso simplificaria a política).
 - [ ] Remover o aviso de `FutureWarning` do script original só no ambiente de teste (não alterar `referencia/`).

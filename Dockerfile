@@ -1,4 +1,7 @@
-FROM php:8.3-cli-bookworm
+# Imagem base oficial do PHP; pode apontar para um espelho (ex.: mirror.gcr.io/library/php:8.3-cli-bookworm)
+# quando o Docker Hub limitar requisições:  --build-arg IMAGEM_BASE=...
+ARG IMAGEM_BASE=php:8.3-cli-bookworm
+FROM ${IMAGEM_BASE}
 
 # R é opcional: a triagem é feita só pelo pacote Python. R serve apenas para o
 # relatório bibliometrix complementar (R/relatorio_bibliometrix.Rmd). Ative com

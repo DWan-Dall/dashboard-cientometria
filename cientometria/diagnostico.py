@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import pandas as pd
 from .entrada import MAPEAMENTO_FIXO, MAPEAMENTO_EXTENSAO, _col, ALIASES, campos_usados
-from .nucleo import candidatos, excluido, _regex_palavra
+from .nucleo import candidatos, _regex_palavra
 from .pipeline import Resultado
 
 

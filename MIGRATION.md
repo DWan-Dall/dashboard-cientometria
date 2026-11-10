@@ -55,6 +55,39 @@ arquivos substituídos foram movidos com `git mv` ou marcados como legado.
 | Sobreposição entre bases (matriz, Sankey) | `consolidacao.sobreposicao`, `graficos.heatmap_sobreposicao` | Sankey não portado (TODO) |
 | `dados/DB_Cientometria_*` | **não copiado** | uso local em `test_dados_reais.py` via variável de ambiente |
 
+### Verificação da migração do R (rodada 2)
+
+`cientometria/compat_r.py` replica as regras de contagem do R e `tests/test_comparacao_r.py` confere,
+número a número, contra `resultados_cientometria/`:
+
+| Bloco R | Arquivo R comparado | Réplica | Padrão da plataforma |
+|---|---|---|---|
+| Bases | `02_bases/01` | idêntica | idêntica (`consolidacao.sobreposicao`) |
+| "Áreas" | `03_areas/01` | idêntica (= estratos) | `estratos()`; `areas()` usa a área temática |
+| Periódicos | `04_periodicos/01` | idêntica (724) | mesmos totais; agrupa variações de caixa |
+| Países | `05_paises/01` | idêntica (727; por afiliação) | por documento e nomes unificados (333) |
+| Autores, coautoria | `06_coautoria/02`, `03`, `06`, `08` | idêntica | arestas idênticas; 6.758 × 6.759 autores |
+| Palavras-chave, coocorrência | `07_palavras_chave/01`, `03` | idêntica | caixa normalizada |
+| Clusters | `08_estrutura_tematica/01` | idêntica (componentes) | Louvain (componentes também exportados) |
+| Séries temporais | `09_series_temporais/01–03` | idêntica (NA em anos vazios) | 0 em anos vazios |
+| Scores por ano | `10_scores/01` | idêntica (com A\* corrompido) | C\*, R\*, T\* iguais; A\* corrigido |
+| Tecnologias | `11_tecnologias/01` | idêntica | únicas por registro (mesmos totais aqui) |
+| Sobreposição | `12_sobreposicao_bases/01`, `06` | idêntica | idêntica |
+
+Co-citação, acoplamento e área temática não puderam ser comparados (sem dados no corpus publicado; o R
+não os calculou).
+
+## Rodada 2 — componentes novos
+
+| Componente | Função |
+|---|---|
+| `seguranca.php`, `router.php`, `.htaccess` | acesso, CSRF, CSP, roteamento seguro, limites de upload |
+| `vendor/chart-4.4.1.umd.js` | Chart.js empacotado (antes: CDN sem versão) |
+| `cientometria/compat_r.py` | réplica das regras do R para auditoria |
+| `scripts/verificar_repositorio.py`, `docs/congelados.sha256` | arquivos congelados e ausência de dados licenciados (CI) |
+| `.github/workflows/ci.yml` | CI |
+| `requirements-dev.txt`, `pyproject.toml` | dependências de desenvolvimento, ruff, pytest |
+
 ## Fonte D — sessão Perplexity
 
 Não acessível; extração pendente (TODO.md).

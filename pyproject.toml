@@ -1,0 +1,26 @@
+[project]
+name = "cientometria"
+version = "0.2.0"
+description = "Plataforma de cientometria reproduzível (triagem C*, R*, T*, A*)"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+# referencia/ contém os scripts originais de jan/2026: congelados, não são reformatados nem "corrigidos".
+extend-exclude = ["referencia", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "W6"]
+ignore = ["E731", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "B017"]
+# Congelados por regra (modo original / histórico): não editar só por estilo.
+"cientometria/nucleo.py" = ["E741"]               # I, M, O, C seguem a notação de A* no artigo
+"scripts/pipeline_legado.py" = ["E741"]
+"tests/test_equivalencia_original.py" = ["E401"]  # teste preservado sem alterações
+"tests/test_modos_e_robustez.py" = ["E401"]       # teste preservado sem alterações
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

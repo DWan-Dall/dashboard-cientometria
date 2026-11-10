@@ -185,7 +185,7 @@ def normalizar_estendido(df: pd.DataFrame, rotulo: str, tipo: str) -> pd.DataFra
     out = pd.DataFrame(index=range(n))
     out["source_db"] = rotulo
     out["db_type"] = tipo
-    for campo, aliases in {**ALIASES, **ALIASES_EXT}.items():
+    for campo in {**ALIASES, **ALIASES_EXT}:
         cols = _colunas_tolerantes(df, campo, {**ALIASES, **ALIASES_EXT})
         if not cols:
             out[campo] = pd.NA

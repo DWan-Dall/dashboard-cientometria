@@ -150,3 +150,64 @@ efetivamente usadas e as datas de exportação não estão registradas (o `log_b
 | 16.845 → 11.547 → 2.068 com as exportações originais | **não executado** — arquivos indisponíveis aqui; teste pronto (`CIENTOMETRIA_EXPORTACOES_ORIGINAIS`) |
 | Divisão 4.233/1.065 | declarado inconsistente pelo notebook; não reverificado |
 | Decisões da sessão Perplexity | **pendente** (inacessível) |
+| Bibliometria × saídas originais do R (12 grupos de resultados) | ✓ idênticos com a réplica `compat_r`; diferenças do padrão explicadas (§7) |
+| Segurança da interface/API (§5) | ✓ 10 achados corrigidos, 38 testes |
+| Persistência (§6) | ✓ 3 achados corrigidos, 12 testes |
+| Docker | ✓ build, inicialização, testes dentro do contêiner, fim a fim |
+
+## 5. Revisão de segurança (rodada 2, 10/11/2026)
+
+Todos reproduzidos antes da correção; testes em `tests/test_seguranca.py`.
+
+| # | Achado | Evidência | Correção |
+|---|---|---|---|
+| S1 | `php -S` servia **tudo** do diretório: `projetos/` (exportações licenciadas importadas), `.git`, código | `GET /projetos/<p>/arquivos/<arquivo>.csv` → 200 com o arquivo | `router.php` serve só os 5 pontos de entrada (+ JS empacotado); `.htaccess` para Apache; Docker usa o roteador e `/dados` fora de `/app` |
+| S2 | Traversal no identificador do projeto | `{"projeto": "../projetos/sec"}` abria o projeto | regex `^[a-z0-9][a-z0-9-]{0,80}$` + confinamento na raiz; IDs de execução/arquivo validados |
+| S3 | API sem CSRF nem verificação de origem | POST `text/plain` com `Origin: evil.example` criava projeto | token CSRF por sessão (cookie HttpOnly, SameSite=Strict), Origin/Referer, só POST |
+| S4 | Sem controle de acesso | qualquer host da rede usava a API | sem credenciais, só loopback; HTTP Basic com `CIENTOMETRIA_USUARIO`/`CIENTOMETRIA_SENHA_HASH` (bcrypt/argon via `password_hash`) |
+| S5 | **XSS armazenado**: títulos/DOIs de exportações inseridos como HTML na triagem rápida | título `<img src=x onerror=…>` executou JavaScript no commit `b1414c0` (Playwright) | escape em todas as interpolações; CSP `script-src 'nonce-…'` sem handlers inline; `index.php` com delegação de eventos |
+| S6 | Uploads e payload da triagem rápida gravados em `tmp_uploads/` dentro do webroot | caminho em `run_pipeline.php` | diretório temporário fora do webroot (0700), removido ao fim |
+| S7 | Upload sem validação de conteúdo | binário com extensão `.csv` aceito | extensão, tamanho (`CIENTOMETRIA_MAX_MB_ARQUIVO`), quantidade, bytes nulos, ZIP/OLE válidos, limite de descompactação (zip bomb), sem links simbólicos; importação confinada ao diretório de upload; arquivos importados somente leitura |
+| S8 | Chart.js de CDN sem versão nem SRI | `<script src="https://cdn.jsdelivr.net/npm/chart.js">` | empacotado em `vendor/` (4.4.1, MIT) com SRI sha384 |
+| S9 | Custo ilimitado: `n_sensibilidade` arbitrário | 10⁹ sorteios aceitos | limite 20.000 |
+| S10 | Mensagens de erro com caminhos absolutos | erro do Python devolvido ao navegador | caminhos substituídos por `<…>` |
+
+Verificações automáticas: `bandit` (0 achados em 3.033 linhas), `pip-audit` (2 vulnerabilidades em
+dependências de desenvolvimento — pytest 8.4.2 e requests 2.32.5 — atualizadas; árvore completa sem
+vulnerabilidades conhecidas), `ruff`.
+
+## 6. Persistência (rodada 2)
+
+| # | Achado | Evidência | Correção |
+|---|---|---|---|
+| P1 | Importações simultâneas **corrompiam** `arquivos.json` (temporário de nome fixo compartilhado) | 16 processos, commit `b1414c0`: `JSONDecodeError` e falha da importação | trava `fcntl` por projeto; temporário único + `fsync` + `rename`; 80/80 importações registradas |
+| P2 | Execução que falhava deixava pasta parcial (sem manifesto) | código | montagem em `.em_andamento_<id>`, renomeação atômica; falhas em `.falhas/<id>/erro.txt` + evento |
+| P3 | Nada impedia executar sobre arquivo de entrada alterado | código | SHA-256 reconferido antes de cada execução; cópia somente leitura; manifesto com SHA-256 de cada saída; `verificar_execucao`, `recuperar`, `reconstruir_registro` |
+
+Limite: o processo roda como root em ambientes sem Docker; `chmod 0444` não impede root de alterar
+arquivos — a detecção por SHA-256 continua valendo.
+
+## 7. Comparação com os resultados originais do R (rodada 2)
+
+`tests/test_comparacao_r.py` (com `CIENTOMETRIA_CORPUS_PUBLICADO` = CSV lido pelo R e
+`CIENTOMETRIA_RESULTADOS_R`). A réplica `cientometria/compat_r.py` reproduz **exatamente**: bases (5),
+"áreas" (= estratos), periódicos (724), países (727 nomes, 2.363 afiliações), autores (6.759),
+coautoria (19.628 arestas; 1.582 com peso ≥ 2), palavras-chave (31) e coocorrência (203 arestas),
+clusters (1 componente), séries de artigos/citações/média por ano (35 anos), scores médios por ano
+(140 valores), tecnologias por ano (175 valores) e sobreposição entre bases (matriz e nº de bases).
+Para isso foi preciso reproduzir a transliteração ICU `Latin-ASCII` (aspas curvas, travessões,
+largura total, "ı" turco; cirílico preservado) e o `str_to_title` do ICU ("Seq2Seq" → "Seq2seq").
+
+Diferenças das funções padrão (`bibliometria.py`), todas intencionais e testadas:
+
+| Análise | R | Padrão | Motivo |
+|---|---|---|---|
+| Países | conta afiliações (China 364; 727 nomes) | conta documentos por país, nomes unificados (China 145; 333 nomes) | evitar que um artigo com várias afiliações do mesmo país pese mais; "USA" = "United States" |
+| Áreas | contagem de `fascia` | área temática da base | rótulo do R estava errado |
+| Anos sem publicação | NA | 0 | série contínua |
+| Scores por ano | A\* médio até **438** (CSV corrompido) | A\* ≤ 1 (com A\* corrigido) | Achado 2 |
+| Tecnologias | menções repetidas no mesmo registro contam | únicas por registro | diferença < 1% (totais iguais neste corpus) |
+| Autores únicos | 6.759 | 6.758 | ponto final removido de um nome |
+
+**Não comparáveis:** co-citação e acoplamento (o corpus publicado não tem referências citadas e o R não os
+calculou); áreas temáticas (sem coluna de área). Exigem exportações com `References`/`CR`.

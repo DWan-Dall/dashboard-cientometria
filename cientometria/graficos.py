@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 DPI = 300
 AZUL, VERMELHO, CINZA = "#2C6FB7", "#B03A2E", "#7A7A7A"

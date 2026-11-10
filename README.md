@@ -36,21 +36,50 @@ não metas.
 pip install -r requirements.txt
 ```
 
+Para testes e verificações: `pip install -r requirements-dev.txt`.
+
 ## Dashboard
 
 ```bash
-php -d upload_max_filesize=256M -d post_max_size=256M -d max_file_uploads=100 -S localhost:8000
+php -d upload_max_filesize=256M -d post_max_size=256M -d max_file_uploads=50 -S 127.0.0.1:8000 router.php
 ```
+
+Use sempre `router.php`: sem ele, o servidor embutido do PHP serve qualquer arquivo da pasta, inclusive
+`projetos/` (exportações licenciadas) e `.git`.
 
 Abra http://localhost:8000. Seções: **Projetos → Importação e diagnóstico → Triagem → Robustez e modos →
 Análises bibliométricas → Execuções e comparação → Relatórios**. A página `triagem_rapida.php` faz uma triagem
 avulsa, sem projeto. Os projetos ficam em `./projetos` (ou em `$CIENTOMETRIA_PROJETOS`), fora do Git.
 
-Com Docker (R opcional: `--build-arg COM_R=1`):
+Com Docker (R opcional: `--build-arg COM_R=1`; a porta fica só em 127.0.0.1 do host):
 
 ```bash
 docker compose up --build
 ```
+
+Se o Docker Hub limitar requisições, use um espelho da imagem base:
+
+```bash
+docker build --build-arg IMAGEM_BASE=mirror.gcr.io/library/php:8.3-cli-bookworm -t dashboard-cientometria:local .
+```
+
+### Acesso e segurança
+
+Sem configuração, só o próprio computador (loopback) acessa a interface. Para acessar de outra máquina,
+defina usuário e senha (HTTP Basic; use HTTPS num proxy reverso):
+
+```bash
+export CIENTOMETRIA_USUARIO=pesquisa
+```
+
+```bash
+export CIENTOMETRIA_SENHA_HASH="$(php -r 'echo password_hash("troque-esta-senha", PASSWORD_DEFAULT);')"
+```
+
+Outras variáveis: `CIENTOMETRIA_MAX_MB_ARQUIVO` (padrão 200), `CIENTOMETRIA_MAX_ARQUIVOS` (50),
+`CIENTOMETRIA_PROJETOS` (pasta dos projetos), `CIENTOMETRIA_DIR_UPLOAD` (temporários).
+`CIENTOMETRIA_PERMITIR_SEM_SENHA=1` só deve ser usado atrás de porta publicada em 127.0.0.1 (como no
+docker-compose). Detalhes em `docs/AUDITORIA.md` §5.
 
 ## Linha de comando (sem dashboard)
 
@@ -126,10 +155,21 @@ O corpus publicado (2.068 registros) pode ser conferido sem as exportações:
 python -m cientometria verificar-corpus DB_Cientometria_Expandida_ver01.xlsx
 ```
 
-## Testes
+## Testes e verificações
 
 ```bash
 python -m pytest -q
+```
+
+```bash
+ruff check cientometria scripts tests && bandit -q -r cientometria && python scripts/verificar_repositorio.py
+```
+
+Os testes que dependem de dados não versionados são pulados sem eles. Comparação com os resultados
+originais do R (`analise-aprofundada-v3`):
+
+```bash
+CIENTOMETRIA_CORPUS_PUBLICADO=…/dados/DB_Cientometria_COMPLETA.csv CIENTOMETRIA_RESULTADOS_R=…/resultados_cientometria python -m pytest tests/test_comparacao_r.py -v
 ```
 
 `tests/test_equivalencia_original.py` executa os scripts originais e o pacote sobre exportações **sintéticas**

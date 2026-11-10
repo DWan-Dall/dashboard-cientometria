@@ -206,11 +206,11 @@ class Projeto:
         p = self.pasta / "historico.jsonl"
         out = []
         if p.exists():
-            for n, l in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
-                if not l.strip():
+            for n, linha in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+                if not linha.strip():
                     continue
                 try:
-                    out.append(json.loads(l))
+                    out.append(json.loads(linha))
                 except json.JSONDecodeError:
                     out.append({"evento": "linha_ilegivel", "linha": n})
         return out

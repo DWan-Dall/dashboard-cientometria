@@ -16,14 +16,27 @@
   variáveis de ambiente (`tests/test_dados_reais.py`).
 - Testes sintéticos não comprovam a reprodução do artigo; diga isso ao relatar resultados.
 - Interface: nada de "metas"/"alvos" editáveis com os números do artigo.
+- `docs/congelados.sha256` lista os arquivos do modo original; o CI falha se mudarem.
+
+## Regras de segurança
+
+- Todo endpoint PHP inclui `seguranca.php`: POST com `seg_exigir_post_protegido()` (acesso, origem, CSRF),
+  páginas com `seg_pagina()`. Scripts só com `nonce`; nada de `onclick=`/`innerHTML` com dado não escapado.
+- Uploads só por `seg_receber_uploads()` em diretório temporário fora do webroot; o Python revalida
+  (`ingestao.validar_conteudo`) e confina a importação (`CIENTOMETRIA_DIR_IMPORTACAO`).
+- Identificadores vindos da web (projeto, execução, arquivo) sempre validados por regex em `projetos.py`.
+- Alterações em metadados de projeto sempre sob `_trava()`; JSON com `_json()` (atômico).
 
 ## Comandos
 
 ```bash
-python -m pytest -q                       # suíte completa (~20 s)
-php -S localhost:8000                     # dashboard
+python -m pytest -q                       # suíte completa (~45 s)
+php -S 127.0.0.1:8000 router.php          # dashboard (sempre com router.php)
 python -m cientometria --help             # CLI
-php -l index.php api.php arquivo.php run_pipeline.php triagem_rapida.php
+for f in *.php; do php -l $f; done        # lint PHP
+ruff check cientometria scripts tests     # lint Python
+bandit -q -r cientometria                 # análise de segurança
+python scripts/verificar_repositorio.py   # arquivos congelados + ausência de dados licenciados
 ```
 
 ## Mapa rápido

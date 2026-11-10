@@ -10,6 +10,7 @@ de resultados do pacote, mas não implementa triagem.
 Navegador ──► index.php / triagem_rapida.php  (exibição)
                  │ fetch
                  ▼
+   router.php ► seguranca.php (acesso, CSRF, CSP, limites)
             api.php · run_pipeline.php · arquivo.php   (upload, repasse, download — sem regras)
                  │ exec
                  ▼
@@ -52,7 +53,11 @@ Navegador ──► index.php / triagem_rapida.php  (exibição)
 | D9 | Parâmetros fora da receita marcam a execução como "personalizada" | Impedir que ajustes passem despercebidos |
 | D10 | Interface sem "alvos" editáveis; números do artigo só como referência histórica | Integridade: não incentivar ajuste para atingir quantidades |
 | D11 | Duplicatas duvidosas listadas para revisão, nunca fundidas automaticamente | Decisão humana registrada |
-| D12 | PHP embutido (`php -S`) mantido | Compatível com a forma de uso atual e com o Docker existente |
+| D12 | PHP embutido (`php -S`) mantido, sempre com `router.php` | Compatível com o uso atual; o roteador impede servir dados e código |
+| D13 | Segurança concentrada em `seguranca.php` (PHP) e revalidada no Python | Defesa em profundidade: o Python não confia na web |
+| D14 | Travas `fcntl`, escrita atômica e SHA-256 de entradas e saídas | Concorrência e integridade sem banco de dados |
+| D15 | `compat_r.py` separado de `bibliometria.py` | Provar a fidelidade do porte sem herdar as escolhas questionáveis do R |
+| D16 | CI com arquivos congelados verificados por hash | Mudança no modo original vira decisão explícita |
 
 ## Contratos
 
@@ -75,3 +80,6 @@ Navegador ──► index.php / triagem_rapida.php  (exibição)
 | `test_bibliometria.py` | análises com resultado conhecido |
 | `test_volume.py` | 60 mil registros |
 | `test_dados_reais.py` | exportações originais e corpus publicado (via variáveis de ambiente) |
+| `test_seguranca.py` | traversal, validação de arquivos, CSRF, origem, autenticação, roteador, relatórios, XSS (HTTP real) |
+| `test_persistencia.py` | concorrência (16 processos), falha e queda simuladas, adulteração, recuperação, manifestos |
+| `test_comparacao_r.py` | réplica e padrão × saídas originais do R (via variáveis de ambiente) |

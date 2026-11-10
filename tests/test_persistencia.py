@@ -1,10 +1,8 @@
 """Persistência: concorrência, falhas durante a execução, integridade dos arquivos originais,
 recuperação após queda e consistência dos manifestos."""
-import json
 import multiprocessing as mp
 import os
 import pathlib
-import shutil
 
 import pytest
 

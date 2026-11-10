@@ -79,7 +79,7 @@ def correspondencias_duvidosas(df: pd.DataFrame, limiar: float = 92.0, max_pares
     pares = []
     # (a) mesmo DOI normalizado, DOI bruto diferente
     g = d[d["_doi"] != ""].groupby("_doi")
-    for doi, grupo in g:
+    for _doi, grupo in g:
         if len(grupo) > 1:
             idx = list(grupo.index)
             for j in idx[1:]:
