@@ -61,7 +61,7 @@ def sobreposicao(bruto: pd.DataFrame) -> dict:
     b = bruto.assign(_id=id_obra(bruto))[["_id", "source_db"]].drop_duplicates()
     b = b[~b["_id"].isin(["tit:", "tit:unknown"])]
     pres = pd.crosstab(b["_id"], b["source_db"]).clip(upper=1)
-    matriz = pres.T.dot(pres)
+    matriz = pres.T.dot(pres).rename_axis("base").reset_index()
     dist = pres.sum(axis=1).value_counts().sort_index().rename_axis("n_bases").reset_index(name="n_obras")
     return {"matriz": matriz, "por_numero_de_bases": dist}
 

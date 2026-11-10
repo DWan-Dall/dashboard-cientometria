@@ -1,5 +1,7 @@
 pandas==2.3.3
 openpyxl==3.1.5
-numpy
-rapidfuzz
+numpy>=1.26
+rapidfuzz>=3.0
+networkx==3.4.2
+matplotlib==3.9.2
 pytest
