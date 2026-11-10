@@ -1,13 +1,25 @@
 services:
   dashboard-cientometria:
     build: .
+    image: dashboard-cientometria:local
     container_name: dashboard-cientometria
+    # Publicada só no loopback do host. Como as requisições chegam ao contêiner pela
+    # rede do Docker (não pelo loopback), CIENTOMETRIA_PERMITIR_SEM_SENHA=1 libera o
+    # acesso sem senha. Para expor em rede, remova essa variável e configure
+    # CIENTOMETRIA_USUARIO e CIENTOMETRIA_SENHA_HASH (ver README).
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       CIENTOMETRIA_PROJETOS: /dados/projetos
+      CIENTOMETRIA_PERMITIR_SEM_SENHA: "1"
     volumes:
-      - ./:/app
-      - ./projetos:/dados/projetos
-    working_dir: /app
-    command: php -d upload_max_filesize=256M -d post_max_size=256M -d max_file_uploads=100 -d max_execution_time=0 -S 0.0.0.0:8000 -t /app
+      - dados:/dados
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  dados:
