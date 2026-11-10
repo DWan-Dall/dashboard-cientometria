@@ -159,3 +159,14 @@ def test_todos_vazios_da_erro_claro(tmp_path):
     bases, _ = carregar_fontes([tmp_path / "c.csv"], Config.original())
     with pytest.raises(ValueError, match="Nenhum registro"):
         executar(bases, Config.original())
+
+
+def test_leitura_robusta_nunca_le_menos_que_a_padrao(tmp_path):
+    """Modo corrigida: um CSV que pd.read_csv lê inteiro não pode perder registros na leitura robusta
+    (campos com quebra de linha, aspas e vírgulas internas, como em resumos reais)."""
+    df = pd.DataFrame({"Title": ['Flood "risk", maps', "Linha\nquebrada no título", "Normal"],
+                       "Abstract": ["a, b; c", 'aspas "duplas"\ne quebra', ""], "DOI": ["10.1/a", "10.1/b", "10.1/c"]})
+    df.to_csv(tmp_path / "x.csv", index=False)
+    for cfg in (Config.original(), Config.corrigida()):
+        bases, fontes = carregar_fontes([tmp_path / "x.csv"], cfg)
+        assert fontes[0].registros == 3, (cfg.modo, fontes[0].leitura)

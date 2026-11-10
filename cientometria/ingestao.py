@@ -321,6 +321,15 @@ def ler_arquivo(caminho, estrategia: str = "robusta", avisos: list | None = None
         return ler_bibtex(p), "bibtex", "parser BibTeX"
     if suf in (".txt", ".nbib") and _e_wos_texto(p):
         return ler_wos_texto(p), "wos-texto", "parser WoS (texto)"
+    if suf == ".csv":
+        # Leitura padrão primeiro: a robusta nunca deve ler MENOS registros que pd.read_csv
+        # (em 10/11/2026 a robusta perdeu 6 de 16.845 registros reais no modo corrigida).
+        try:
+            df = pd.read_csv(p)
+            if len(df.columns) > 1:
+                return df, "csv", "pd.read_csv padrão"
+        except Exception as e:  # noqa: BLE001 — cai para a leitura robusta, registrando o motivo
+            avisos.append(f"leitura padrão falhou ({type(e).__name__}); usada leitura robusta")
     if suf in (".csv", ".tsv", ".txt"):
         if estrategia == "original":
             avisos.append("formato fora do procedimento original: lido com leitura robusta")
