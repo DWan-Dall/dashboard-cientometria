@@ -5,7 +5,8 @@
    Mudá-los exige decisão metodológica: nova versão em cientometria/versao.py,
    METHODOLOGY.md §3 e atualização deliberada do arquivo de somas.
 2. Nenhum dado tabular/bibliográfico versionado fora da lista permitida (as exportações
-   das bases têm licença e não podem ser publicadas).
+   das bases têm licença e não podem ser publicadas), nem pacotes .zip de execução
+   (podem conter as exportações de entrada e o corpus derivado delas).
 3. Nenhum diretório de dados de projetos versionado.
 """
 import hashlib
@@ -15,7 +16,7 @@ import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 PERMITIDOS = {"docs/log_buscas_template.csv", "exemplos/referencias_dias2025.csv"}
-EXT_DADOS = {".csv", ".tsv", ".xlsx", ".xls", ".ris", ".bib", ".bibtex", ".nbib"}
+EXT_DADOS = {".csv", ".tsv", ".xlsx", ".xls", ".ris", ".bib", ".bibtex", ".nbib", ".zip"}
 
 
 def main() -> int:

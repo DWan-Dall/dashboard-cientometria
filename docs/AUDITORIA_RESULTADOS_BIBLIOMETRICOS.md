@@ -235,6 +235,8 @@ descritivas ou propostas de **variante independente**.
     `intermediacao_nucleo`, aviso sobre ano incompleto e janela de citação.
 12. **Exportação da execução em `.zip`** com `manifesto.json` e verificação de hashes na reimportação (ver
     proposta da pesquisadora) — tornaria auditorias como esta verificáveis arquivo a arquivo.
+    *Implementada depois desta auditoria* (`cientometria/pacote.py`; ações `exportar_execucao` e
+    `importar_execucao`; `docs/SEGURANCA.md`, V11). Os resultados auditados aqui não foram reprocessados.
 
 ## Conclusão
 

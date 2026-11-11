@@ -127,6 +127,24 @@ Cada execução cria `projetos/<projeto>/execucoes/<data>_<id>/` com `manifesto.
 `consolidado.csv`, `diagnosticos/` (campos ausentes, limitações, duplicatas para revisão), `bibliometria/`,
 `graficos/` (PNG 300 dpi) e `relatorios/` (CSV, XLSX, PDF, relatório metodológico em Markdown, parâmetros).
 
+### Entregar uma execução para auditoria (.zip)
+
+```bash
+python -m cientometria exportar-execucao revisao-enchentes <id> --destino entregas/
+```
+
+```bash
+python -m cientometria importar-execucao outro-projeto entregas/<data>_<id>.zip
+```
+
+O `.zip` contém a pasta inteira da execução (o `manifesto.json` guarda o SHA-256 de cada saída), um
+`LEIA-ME.txt` (ID, versões, hash do corpus, SHA-256 do manifesto, instruções) e um `SHA256SUMS.txt` para
+`sha256sum -c`. As exportações de entrada (dados licenciados) **não** são incluídas, salvo com
+`--incluir-entradas` (ou a opção na interface, com aviso). A importação recusa pacotes adulterados, com caminhos
+perigosos ou grandes demais, e nunca sobrescreve uma execução com o mesmo ID; a execução importada fica
+somente leitura e marcada como "importada". Na interface: seção **6. Execuções e comparação**. Entregue sempre o
+`.zip` completo — arquivos soltos de `relatorios/` sem o manifesto não são verificáveis um a um.
+
 ## Uso como biblioteca
 
 ```python
