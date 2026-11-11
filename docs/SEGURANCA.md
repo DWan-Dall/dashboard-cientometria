@@ -16,6 +16,7 @@ Versões comparadas:
 | Antes da revisão de segurança | `b1414c0` | estado do PR após a unificação |
 | Após a rodada 2 | `8fc05f9` | 10 achados de segurança + 3 de persistência corrigidos |
 | Após a rodada 3 (atual) | `d71479d` + este commit | 6 achados novos corrigidos (+ H2 no modo Docker) |
+| Rodada 4: exportação/importação de execução (.zip) | branch `claudinho/magical-allen-ehxbar` | nova superfície de upload (V11, §1a) + 1 achado na camada de upload existente (V12) |
 
 ## 1. Vulnerabilidades: reprodução, correção, teste e risco residual
 
@@ -44,11 +45,58 @@ licenciadas): **Alta** = acesso a dados ou execução de código no navegador se
 | P1 | Média | Importações simultâneas corrompiam `arquivos.json` | 16 processos, `b1414c0`: `JSONDecodeError` e falha da importação (via HTTP com 8 workers não se manifestou em 96 tentativas) | trava `fcntl`; temporário único + `fsync` + `rename` | `test_persistencia.py::test_importacoes_simultaneas_nao_perdem_registros` (64 em 16 processos), `::test_mesmo_arquivo_importado_em_paralelo_gera_um_registro`, `::test_criacao_simultanea_de_projetos_com_mesmo_nome`, `::test_execucoes_simultaneas_no_mesmo_projeto`; caixa-preta P1 | `fcntl` não protege sistemas de arquivos de rede sem suporte a travas (NFS antigo) |
 | P2 | Média | Execução que falhava deixava resultado parcial | código; falha simulada | `.em_andamento_<id>` + renomeação atômica; `.falhas/<id>/erro.txt` | `::test_falha_durante_execucao_nao_deixa_resultado_parcial`, `::test_recuperacao_apos_queda` | — |
 | P3 | Média | Execução sobre arquivo de entrada alterado; saídas sem verificação | arquivo adulterado era usado sem aviso | SHA-256 das entradas reconferido; manifesto com SHA-256 de cada saída; `verificar_execucao`, `recuperar`, `reconstruir_registro` | `::test_arquivo_original_alterado_impede_execucao`, `::test_manifesto_consistente_e_saidas_verificaveis`, `::test_registro_corrompido_e_reconstrucao`, `::test_execucao_concluida_nunca_e_sobrescrita` | Como root (fora do Docker) a cópia somente leitura pode ser alterada; a adulteração é detectada, não impedida |
+| V11 | Alta (superfície nova) | **Upload de pacote .zip de execução** (`importar_execucao`): traversal (`../`, absolutos, `\`), links simbólicos, bomba de descompactação, sobrescrita de execução existente, resultado adulterado aceito como legítimo | superfície criada nesta rodada: cada ataque foi montado como .zip real e executado contra a importação (análise em §1a) | `cientometria/pacote.py`: lista de membros validada **antes** de extrair; estrutura fixa; limites de .zip/membros/descompactado (declarado **e** contado); extração em pasta oculta do projeto; SHA-256 de cada saída × `saidas_sha256` e hash do corpus recalculado (`Projeto.conferir_saidas`, o mesmo de `verificar_execucao`); publicação por `rename` sob `_trava`; ID repetido recusado; arquivos 0444; PHP: só `.zip`, 1 arquivo, `CIENTOMETRIA_MAX_MB_ZIP`, via `seg_receber_uploads`, confinado a `CIENTOMETRIA_DIR_IMPORTACAO` | `test_pacote_execucao.py` (40): `::test_caminho_perigoso_e_recusado` (14 nomes), `::test_link_simbolico_no_zip_e_recusado` (2), `::test_arquivo_especial_e_duas_pastas_recusados`, `::test_zip_bomba_recusado_antes_de_extrair`, `::test_zip_bomba_com_tamanho_falsificado_no_cabecalho`, `::test_limite_de_membros_e_de_tamanho_do_zip`, `::test_pacote_adulterado_e_recusado` (8), `::test_entrada_que_nao_consta_do_manifesto_e_recusada`, `::test_id_repetido_nao_sobrescreve`, `::test_pacote_por_link_simbolico_ou_fora_do_diretorio_permitido`, `::test_http_exportar_e_importar`, `::test_http_limites_e_temporarios_removidos`; `test_interface.py::test_exportar_e_importar_execucao_zip` (Chromium, CSP ativo) | Hashes do pacote provam consistência **interna**, não autoria (§1a, R1). Dentro dos limites, um .zip de 200 MiB/1 GiB descompactado ainda ocupa disco e CPU |
+| V12 | Média | **Upload recusado no meio deixava arquivos no diretório temporário** (`exit()`/`seg_negar()` do PHP não executa `finally`): 1º arquivo (exportação licenciada) ficava em `CIENTOMETRIA_DIR_UPLOAD` | em `adfa0e1`: `importar` com `[lens-export.csv, x.php]` → HTTP 415 e `up_<…>/000_lens-export.csv` permanecia no disco (reproduzido com `php -S`; depois da correção: nenhum arquivo) | `seg_diretorio_temporario()` agenda `seg_remover_diretorio()` com `register_shutdown_function` (vale para todos os endpoints: importação, .zip, triagem rápida, payloads) | `test_pacote_execucao.py::test_http_limites_e_temporarios_removidos` (falha sem a correção, passa com ela) | Queda do processo PHP (kill -9) ainda deixa o temporário; o diretório é 0700 e fora do webroot |
 
 **Hipóteses testadas e não confirmadas** (mantidas como teste de regressão): XXE e "billion laughs" em `.xlsx`
 — rejeitados pelo leitor; reforço: `.xlsx` com `DOCTYPE` recusado e `defusedxml` instalado
 (`::test_xlsx_com_doctype_rejeitado`). Injeção de comando nos `exec()` do PHP — todos os argumentos passam por
 `escapeshellarg`; `bandit` sem achados.
+
+## 1a. Análise da superfície de exportação/importação de execução (.zip)
+
+**Por que existe.** Na auditoria da execução `052b2a400fc1` os arquivos de `relatorios/` chegaram sem
+`manifesto.json`, e a proveniência teve de ser provada recalculando o hash do corpus
+(`docs/AUDITORIA_RESULTADOS_BIBLIOMETRICOS.md`, §2, §9, recomendação 12). O .zip leva a pasta inteira da
+execução e torna cada arquivo verificável.
+
+**Fluxos e fronteiras de confiança.**
+
+| Fluxo | Entrada não confiável | Controles |
+|---|---|---|
+| `POST api.php?acao=exportar_execucao` (JSON `projeto`, `id`, `incluir_entradas`) | identificadores | `seg_exigir_post_protegido()` (acesso, Host, origem, CSRF); regex de projeto e de execução no PHP **e** no Python; `incluir_entradas` só com booleano `true`; o caminho de destino **nunca** vem do payload (`CIENTOMETRIA_DIR_EXPORTACAO`, temporário 0700 fora do webroot, apagado após o envio); nome do .zip conferido por regex e `realpath` antes do `readfile`; resposta `attachment` com CSP `sandbox` |
+| `POST api.php?acao=importar_execucao` (multipart, 1 arquivo) | o .zip inteiro | `seg_exigir_post_protegido()`; `seg_receber_uploads($dir, ['zip'], 1, seg_limite_zip())`; Python confinado a `CIENTOMETRIA_DIR_IMPORTACAO`; validações abaixo |
+| CLI `exportar-execucao` / `importar-execucao` | arquivo local | as mesmas funções (`cientometria/pacote.py`) |
+
+**Ameaças à importação e como cada uma é tratada** (todas com teste em `tests/test_pacote_execucao.py`):
+
+| Ameaça | Controle |
+|---|---|
+| Traversal / zip-slip (`../x`, `/abs`, `C:/x`, `a\..\b`, `./`, `//`) | nomes validados segmento a segmento (`[A-Za-z0-9._-]`, sem `.`/`..`/vazio, sem `\`, NUL, letra de unidade); só são aceitos `LEIA-ME.txt`, `SHA256SUMS.txt`, **uma** pasta `<AAAAMMDDTHHMMSSZ>_<id>/` e `entradas/<arquivo>`; cada destino ainda é conferido com `_dentro()` e criado com `open(..., "xb")` (nunca sobrescreve) |
+| Link simbólico / arquivo especial no .zip | atributos Unix (`external_attr`) com `S_IFLNK`, FIFO, dispositivo etc. → recusa; nada é extraído com `extractall` |
+| Link simbólico no lugar do .zip enviado | recusa (`is_symlink`) |
+| Nomes duplicados (inclusive só por caixa) e arquivo/pasta com o mesmo nome | recusa |
+| Bomba de descompactação | limites `CIENTOMETRIA_MAX_MB_ZIP` (200), `CIENTOMETRIA_MAX_MEMBROS_ZIP` (5.000) e `CIENTOMETRIA_MAX_MB_DESCOMPACTADO` (1.024): a soma dos tamanhos declarados é conferida **antes** de extrair, e a extração conta os bytes reais (o cabeçalho pode mentir: teste com `file_size` falsificado para 10 bytes e 32 MiB reais). .zip aninhado nunca é aberto. Membros cifrados recusados. Limites de memória/tempo do processo (H6) continuam valendo |
+| Pacote adulterado (arquivo alterado, acrescentado ou removido; manifesto ausente ou sem `saidas_sha256`) | todo arquivo da pasta × `manifesto.json["saidas_sha256"]` (conjunto e conteúdo) e hash do corpus recalculado de `corpus.csv` — `Projeto.conferir_saidas`, o mesmo código de `verificar_execucao`. Entradas incluídas precisam constar de `manifesto.json["fontes"]` (SHA-256) |
+| Sobrescrita de execução existente / corrida entre importações | ID já presente no projeto → recusa (`FileExistsError`, "nada foi importado nem sobrescrito"), verificado sob `_trava()`; publicação por `rename` atômico de uma pasta oculta `.importando_<uuid>` (não listada); falha no meio → temporário removido (`recuperar()` também o remove após queda) |
+| Execução importada usada como se fosse local | registro em `execucoes/.importadas/<pasta>.json` (data, nome e SHA-256 do .zip, entradas), arquivos 0444, marca "importada" na lista e no histórico (`execucao_importada`); `reproduzir` recusa execução importada; `verificar_execucao` não exige as entradas no projeto (relata em `avisos`) mas reconfere as que vieram no .zip |
+| XSS por conteúdo do pacote (rótulo, nomes) na interface | todos os campos passam por `esc()`; nomes de membros restritos a ASCII seguro; CSP inalterado (o download usa `blob:` sem relaxar o CSP — teste no Chromium) |
+| Vazamento de dados licenciados | padrão **sem** entradas (opção desmarcada, aviso ao marcar, `LEIA-ME.txt` explícito); `.zip` no `.gitignore` e em `scripts/verificar_repositorio.py`; o .zip gerado pela web não fica no disco (V12 garante a remoção mesmo em erro) |
+
+**Riscos residuais desta superfície.**
+
+- **R1 — autenticidade ≠ integridade.** Quem altera um arquivo e recalcula `saidas_sha256` **e** `hash_corpus`
+  no manifesto produz um pacote internamente consistente, que a importação aceita. O `hash_corpus` cobre só as
+  colunas de `COLUNAS_CORPUS`; as demais colunas de `corpus.csv` e os outros arquivos dependem de
+  `saidas_sha256`. Prova de autoria exige comparar o **SHA-256 do `manifesto.json`** (no `LEIA-ME.txt` e na
+  interface após exportar) com um valor registrado por outro canal (artigo, ata, repositório de dados). Assinatura
+  digital não foi implementada.
+- **R2** — dentro dos limites, um pacote grande ainda consome disco e CPU (sem cota por projeto).
+- **R3** — o script de caixa-preta `scripts/validacao_seguranca.py` **não** foi estendido a esta superfície: o
+  seu SHA-256 está fixado em `docs/evidencias/validacao_seguranca.sha256` para comparação entre versões. A
+  cobertura aqui é por testes de integração (HTTP real contra `php -S`) e de interface (Chromium).
+- **R4** — como root (fora do Docker), a cópia 0444 pode ser alterada; a alteração é **detectada** por
+  `verificar_execucao`, não impedida (igual a P3).
 
 ## 2. Evidências dos testes automatizados após as correções
 
@@ -71,6 +119,11 @@ Execução local: 2026-11-10T18:50:34.524028+00:00 — 172 testes, falhas=0, err
   test_seguranca                   passou= 58 pulado=  0 falhou=  0
   test_volume                      passou=  1 pulado=  0 falhou=  0
 ```
+
+Rodada 4 (exportação/importação .zip, V11–V12), execução local com Python 3.13 e PHP do sistema:
+`191 passed, 35 skipped, 6 xfailed` (antes da rodada: `150 passed, 35 skipped, 6 xfailed`; os pulados são os
+mesmos — comparação com o R e dados reais indisponíveis); `ruff`, `bandit`, `php -l` e
+`scripts/verificar_repositorio.py` sem achados.
 
 Dentro do contêiner (Python 3.11, PHP 8.3, usuário sem privilégios, código somente leitura): `144 passed, 28 skipped` (`docs/evidencias/testes_no_conteiner.txt`; os 2 testes de interface são pulados porque a imagem de produção não inclui navegador).
 
@@ -123,7 +176,8 @@ Observações:
 | Processamento | 4 modos × 2 cenários sintéticos: contagens, estratos, top 10, soma dos escores e hash do corpus idênticos ao retrato; modo original = scripts de referência; volume de 60 mil registros | `test_regressao.py::test_processamento_inalterado` (8), `test_equivalencia_original.py` (3), `test_modos_e_robustez.py` (9), `test_consolidacao.py` (7), `test_volume.py` |
 | Persistência | concorrência, falha e queda simuladas, adulteração, recuperação, manifestos | `test_persistencia.py` (12), `test_projetos_manifesto.py` (8) |
 | API | contrato de todas as ações e rejeição de entradas inválidas (Python); contrato JSON do adaptador; HTTP real com CSRF | `test_regressao.py::test_contrato_api`, `::test_api_rejeita_entradas_invalidas` (5), `test_adaptador_dashboard.py` (8), `test_seguranca.py` (HTTP) |
-| Interface | Chromium real com o CSP ativo: fluxo completo do dashboard (criar projeto com nome malicioso, importar, diagnosticar, executar 2 modos, comparar modos, bibliometria e gráficos, comparar execuções, reproduzir, baixar relatório) e triagem rápida (execução, título malicioso, arquivo inválido); zero erros de JavaScript/CSP | `test_interface.py` (2) |
+| Exportação/importação .zip | ida e volta (bytes idênticos, 0444, histórico, `verificar_execucao` ok), com e sem entradas, reexportação de execução importada, `LEIA-ME.txt` e `SHA256SUMS.txt`, CLI | `test_pacote_execucao.py` (40) |
+| Interface | Chromium real com o CSP ativo: fluxo completo do dashboard (criar projeto com nome malicioso, importar, diagnosticar, executar 2 modos, comparar modos, bibliometria e gráficos, comparar execuções, reproduzir, baixar relatório), triagem rápida (execução, título malicioso, arquivo inválido) e exportar → baixar .zip → importar em outro projeto → marca "importada" e verificação ok → ID repetido recusado; zero erros de JavaScript/CSP | `test_interface.py` (3) |
 
 O retrato do processamento (`tests/regressao/esperado.json`) usa dados sintéticos e não valida a reprodução do artigo.
 
@@ -137,6 +191,8 @@ O retrato do processamento (`tests/regressao/esperado.json`) usa dados sintétic
 6. **Revisão por terceiros**: esta validação foi feita pelo mesmo agente que implementou as correções; o script
    de caixa-preta reduz, mas não elimina, esse viés. Recomenda-se revisão humana independente.
 7. **Dados reais**: testes com as exportações originais não foram executados (arquivos indisponíveis).
+8. **Pacotes .zip**: integridade interna não prova autoria (§1a, R1); compare o SHA-256 do `manifesto.json` com
+   um registro externo.
 
 ## 6. Como repetir
 
