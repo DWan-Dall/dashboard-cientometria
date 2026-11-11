@@ -1,0 +1,18 @@
+V1   EXPLORÁVEL     Arquivos internos servidos (projetos/, .git, código) — acessíveis: ['/projetos/valseg-1794336479/arquivos.json', '/projetos/valseg-1794336479/projeto.json', '/.git/HEAD', '/cientometria/api.py']
+V2   EXPLORÁVEL     Path traversal no identificador do projeto — HTTP 200
+V3   EXPLORÁVEL     CSRF / origem não verificada — HTTP 200
+V4   EXPLORÁVEL     Acesso remoto sem credenciais — HTTP 200 (Host=IP), 200 (Host=localhost falsificado) via http://192.0.2.2:8810
+V5   EXPLORÁVEL     XSS armazenado via título de exportação — JavaScript do título executou
+V6   EXPLORÁVEL     Uploads gravados no webroot — 10 arquivo(s) em tmp_uploads/ durante o processamento
+V7   EXPLORÁVEL     Upload de conteúdo incompatível com a extensão — HTTP 200
+V8   EXPLORÁVEL     Script de CDN sem versão fixa/SRI — ['https://cdn.jsdelivr.net/npm/chart.js']
+V10  EXPLORÁVEL     Caminhos absolutos em mensagens de erro — FileNotFoundError: Projeto não encontrado: /tmp/claude-0/-home-user/72b0aaf1-387b-554b-97e
+H1   EXPLORÁVEL     DNS rebinding (Host do atacante) — página 200, API 200
+H2   EXPLORÁVEL     Proxy reverso local dispensa senha — HTTP 200
+H3   EXPLORÁVEL     Triagem rápida sem validação de conteúdo — HTTP 500: {"error":"Falha no pipeline (python): Traceback (most recent call last
+H4   EXPLORÁVEL     Metadados do projeto sem validação — HTTP 200
+H5   EXPLORÁVEL     Injeção de fórmula no XLSX do relatório — células com fórmula: ['C2']
+P1   EXPLORÁVEL     Importações simultâneas corrompem o registro — 94/96 respostas 200; 94/96 registrados (via HTTP; o servidor limita a concorrência ao nº de workers do PHP)
+V9   EXPLORÁVEL     Sorteios de sensibilidade sem limite — 10⁷ sorteios aceitos: requisição ainda processando após 60 s
+
+EXPLORÁVEIS: ['V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V10', 'H1', 'H2', 'H3', 'H4', 'H5', 'P1', 'V9']

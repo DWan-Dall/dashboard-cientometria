@@ -1,0 +1,102 @@
+{
+ "base": "http://127.0.0.1:8812",
+ "execucao_ok": true,
+ "resultados": [
+  {
+   "id": "V1",
+   "vulnerabilidade": "Arquivos internos servidos (projetos/, .git, código)",
+   "resultado": "BLOQUEADO",
+   "evidencia": "todos 404"
+  },
+  {
+   "id": "V2",
+   "vulnerabilidade": "Path traversal no identificador do projeto",
+   "resultado": "BLOQUEADO",
+   "evidencia": "HTTP 422"
+  },
+  {
+   "id": "V3",
+   "vulnerabilidade": "CSRF / origem não verificada",
+   "resultado": "BLOQUEADO",
+   "evidencia": "HTTP 403"
+  },
+  {
+   "id": "V4",
+   "vulnerabilidade": "Acesso remoto sem credenciais",
+   "resultado": "BLOQUEADO",
+   "evidencia": "HTTP 421 (Host=IP), 403 (Host=localhost falsificado) via http://192.0.2.2:8812"
+  },
+  {
+   "id": "V5",
+   "vulnerabilidade": "XSS armazenado via título de exportação",
+   "resultado": "BLOQUEADO",
+   "evidencia": "não executou; exibido como texto=True"
+  },
+  {
+   "id": "V6",
+   "vulnerabilidade": "Uploads gravados no webroot",
+   "resultado": "BLOQUEADO",
+   "evidencia": "nenhum arquivo em tmp_uploads/ durante o processamento"
+  },
+  {
+   "id": "V7",
+   "vulnerabilidade": "Upload de conteúdo incompatível com a extensão",
+   "resultado": "BLOQUEADO",
+   "evidencia": "HTTP 422"
+  },
+  {
+   "id": "V8",
+   "vulnerabilidade": "Script de CDN sem versão fixa/SRI",
+   "resultado": "BLOQUEADO",
+   "evidencia": "nenhum"
+  },
+  {
+   "id": "V10",
+   "vulnerabilidade": "Caminhos absolutos em mensagens de erro",
+   "resultado": "BLOQUEADO",
+   "evidencia": "FileNotFoundError: Projeto não encontrado: nao-existe-xyz"
+  },
+  {
+   "id": "H1",
+   "vulnerabilidade": "DNS rebinding (Host do atacante)",
+   "resultado": "BLOQUEADO",
+   "evidencia": "página 421, API 421"
+  },
+  {
+   "id": "H2",
+   "vulnerabilidade": "Proxy reverso local dispensa senha",
+   "resultado": "BLOQUEADO",
+   "evidencia": "HTTP 403"
+  },
+  {
+   "id": "H3",
+   "vulnerabilidade": "Triagem rápida sem validação de conteúdo",
+   "resultado": "BLOQUEADO",
+   "evidencia": "HTTP 422: {\"erro\":\"Falha no pipeline: ArquivoInvalido: lens-export.xlsx: XML com"
+  },
+  {
+   "id": "H4",
+   "vulnerabilidade": "Metadados do projeto sem validação",
+   "resultado": "BLOQUEADO",
+   "evidencia": "HTTP 422"
+  },
+  {
+   "id": "H5",
+   "vulnerabilidade": "Injeção de fórmula no XLSX do relatório",
+   "resultado": "BLOQUEADO",
+   "evidencia": "células com fórmula: nenhuma"
+  },
+  {
+   "id": "P1",
+   "vulnerabilidade": "Importações simultâneas corrompem o registro",
+   "resultado": "BLOQUEADO",
+   "evidencia": "96/96 respostas 200; 96/96 registrados (via HTTP; o servidor limita a concorrência ao nº de workers do PHP)"
+  },
+  {
+   "id": "V9",
+   "vulnerabilidade": "Sorteios de sensibilidade sem limite",
+   "resultado": "BLOQUEADO",
+   "evidencia": "n efetivo = 20000"
+  }
+ ]
+}

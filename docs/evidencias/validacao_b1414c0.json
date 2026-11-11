@@ -1,0 +1,102 @@
+{
+ "base": "http://127.0.0.1:8810",
+ "execucao_ok": true,
+ "resultados": [
+  {
+   "id": "V1",
+   "vulnerabilidade": "Arquivos internos servidos (projetos/, .git, código)",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "acessíveis: ['/projetos/valseg-1794336479/arquivos.json', '/projetos/valseg-1794336479/projeto.json', '/.git/HEAD', '/cientometria/api.py']"
+  },
+  {
+   "id": "V2",
+   "vulnerabilidade": "Path traversal no identificador do projeto",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "HTTP 200"
+  },
+  {
+   "id": "V3",
+   "vulnerabilidade": "CSRF / origem não verificada",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "HTTP 200"
+  },
+  {
+   "id": "V4",
+   "vulnerabilidade": "Acesso remoto sem credenciais",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "HTTP 200 (Host=IP), 200 (Host=localhost falsificado) via http://192.0.2.2:8810"
+  },
+  {
+   "id": "V5",
+   "vulnerabilidade": "XSS armazenado via título de exportação",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "JavaScript do título executou"
+  },
+  {
+   "id": "V6",
+   "vulnerabilidade": "Uploads gravados no webroot",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "10 arquivo(s) em tmp_uploads/ durante o processamento"
+  },
+  {
+   "id": "V7",
+   "vulnerabilidade": "Upload de conteúdo incompatível com a extensão",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "HTTP 200"
+  },
+  {
+   "id": "V8",
+   "vulnerabilidade": "Script de CDN sem versão fixa/SRI",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "['https://cdn.jsdelivr.net/npm/chart.js']"
+  },
+  {
+   "id": "V10",
+   "vulnerabilidade": "Caminhos absolutos em mensagens de erro",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "FileNotFoundError: Projeto não encontrado: /tmp/claude-0/-home-user/72b0aaf1-387b-554b-97e"
+  },
+  {
+   "id": "H1",
+   "vulnerabilidade": "DNS rebinding (Host do atacante)",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "página 200, API 200"
+  },
+  {
+   "id": "H2",
+   "vulnerabilidade": "Proxy reverso local dispensa senha",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "HTTP 200"
+  },
+  {
+   "id": "H3",
+   "vulnerabilidade": "Triagem rápida sem validação de conteúdo",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "HTTP 500: {\"error\":\"Falha no pipeline (python): Traceback (most recent call last"
+  },
+  {
+   "id": "H4",
+   "vulnerabilidade": "Metadados do projeto sem validação",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "HTTP 200"
+  },
+  {
+   "id": "H5",
+   "vulnerabilidade": "Injeção de fórmula no XLSX do relatório",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "células com fórmula: ['C2']"
+  },
+  {
+   "id": "P1",
+   "vulnerabilidade": "Importações simultâneas corrompem o registro",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "94/96 respostas 200; 94/96 registrados (via HTTP; o servidor limita a concorrência ao nº de workers do PHP)"
+  },
+  {
+   "id": "V9",
+   "vulnerabilidade": "Sorteios de sensibilidade sem limite",
+   "resultado": "EXPLORÁVEL",
+   "evidencia": "10⁷ sorteios aceitos: requisição ainda processando após 60 s"
+  }
+ ]
+}

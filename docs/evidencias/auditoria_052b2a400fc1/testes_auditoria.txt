@@ -1,0 +1,18 @@
+tests/test_auditoria_resultados.py::test_corpus_pertence_a_execucao PASSED [  6%]
+tests/test_auditoria_resultados.py::test_triagem_internamente_consistente PASSED [ 13%]
+tests/test_auditoria_resultados.py::test_producao_anual_e_escores_por_ano PASSED [ 20%]
+tests/test_auditoria_resultados.py::test_periodicos_e_bradford PASSED    [ 26%]
+tests/test_auditoria_resultados.py::test_redes_coerentes PASSED          [ 33%]
+tests/test_auditoria_resultados.py::test_mapa_tematico_recalculado PASSED [ 40%]
+tests/test_auditoria_resultados.py::test_tecnologias_denominadores PASSED [ 46%]
+tests/test_auditoria_resultados.py::test_sobreposicao_coerente PASSED    [ 53%]
+tests/test_auditoria_resultados.py::test_xlsx_igual_aos_csv PASSED       [ 60%]
+tests/test_auditoria_resultados.py::test_autores_da_lens_sao_lidos XFAIL [ 66%]
+tests/test_auditoria_resultados.py::test_marcadores_de_ausencia_nao_viram_entidades XFAIL [ 73%]
+tests/test_auditoria_resultados.py::test_acoplamento_usa_identificador_unico XFAIL [ 80%]
+tests/test_auditoria_resultados.py::test_tecnologia_attention_exige_mecanismo XFAIL [ 86%]
+tests/test_auditoria_resultados.py::test_percentual_de_ano_sem_mencoes_e_ausente XFAIL [ 93%]
+tests/test_auditoria_resultados.py::test_cobertura_informa_documentos_com_o_campo XFAIL [100%]
+========================= 9 passed, 6 xfailed in 5.71s =========================
+versões: pandas 2.3.3 numpy 2.5.3 networkx 3.4.2 matplotlib 3.9.2
+código auditado: 2e32d75 Ingestão: leitura padrão antes da robusta (corrigida perdia 6 registros reais)

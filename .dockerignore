@@ -1,5 +1,8 @@
 .git
 .gitignore
+.github
 __pycache__/
 *.pyc
 tmp_uploads/
+projetos/
+.pytest_cache/

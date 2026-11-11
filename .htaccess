@@ -1,0 +1,9 @@
+# Para quem servir com Apache: só os pontos de entrada PHP são acessíveis.
+Options -Indexes
+<FilesMatch ".*">
+  Require all denied
+</FilesMatch>
+<FilesMatch "^((index|triagem_rapida|api|arquivo|run_pipeline)\.php|chart-4\.4\.1\.umd\.js)$">
+  Require all granted
+</FilesMatch>
+RedirectMatch 404 /(\.git|projetos|tmp_uploads|cientometria|tests|scripts|referencia|docs|notebooks|R)(/|$)

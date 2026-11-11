@@ -1,0 +1,55 @@
+---
+title: "Relatório bibliométrico complementar (bibliometrix)"
+output: html_document
+params:
+  corpus: "corpus.csv"        # corpus.csv de uma execução (projetos/<p>/execucoes/<id>/corpus.csv)
+  exportacoes: ""             # pasta com exportações Scopus/WoS completas (opcional, p/ redes de referências)
+---
+
+<!--
+Migrado de cientometria/Relatorio_Cientometria.Rmd e cientometria/main.R (Fonte A).
+REGRA: este relatório NÃO faz triagem. O conjunto de documentos vem de uma execução do
+pacote Python `cientometria` (fonte única do método). Aqui só se acrescentam análises
+do bibliometrix que dependem de campos completos das exportações (referências citadas).
+-->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(bibliometrix)
+```
+
+## 1. Documentos selecionados pela triagem
+
+```{r}
+corpus <- read.csv(params$corpus, stringsAsFactors = FALSE)
+dois <- tolower(trimws(corpus$doi[corpus$doi != ""]))
+cat("Documentos no corpus:", nrow(corpus), "| com DOI:", length(dois), "\n")
+```
+
+## 2. Exportações completas (opcional) restritas ao corpus
+
+```{r, eval = nzchar(params$exportacoes)}
+arqs <- list.files(params$exportacoes, full.names = TRUE)
+dfs <- list()
+for (a in arqs) {
+  if (grepl("\\.csv$", a, ignore.case = TRUE)) dfs[[a]] <- convert2df(a, dbsource = "scopus", format = "csv")
+  if (grepl("\\.txt$", a, ignore.case = TRUE)) dfs[[a]] <- convert2df(a, dbsource = "wos", format = "plaintext")
+  if (grepl("\\.bib$", a, ignore.case = TRUE)) dfs[[a]] <- convert2df(a, dbsource = "scopus", format = "bibtex")
+}
+M <- mergeDbSources(dfs, remove.duplicated = TRUE)
+M <- M[tolower(trimws(M$DI)) %in% dois, ]
+res <- biblioAnalysis(M, sep = ";")
+summary(res, k = 20, pause = FALSE)
+```
+
+## 3. Redes (co-palavra, co-citação, acoplamento) e mapa temático
+
+```{r, eval = nzchar(params$exportacoes)}
+Net_kw <- biblioNetwork(M, analysis = "co-occurrences", network = "keywords", sep = ";")
+networkPlot(Net_kw, normalize = "association", type = "fruchterman", size = TRUE, n = 50, labelsize = 0.7)
+Net_ref <- biblioNetwork(M, analysis = "co-citation", network = "references", sep = ";")
+networkPlot(Net_ref, n = 50, type = "fruchterman", size = TRUE, labelsize = 0.7)
+Net_bc <- biblioNetwork(M, analysis = "coupling", network = "references", sep = ";")
+networkPlot(Net_bc, n = 50, type = "fruchterman", size = TRUE, labelsize = 0.7)
+thematicMap(M, field = "ID", minfreq = 5, stemming = FALSE, n.labels = 4)
+```

@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+# LEGADO — DESATIVADO. Implementação independente da triagem (regras próprias, diferentes do
+# método do artigo). Mantido só para histórico; o dashboard não o executa. A triagem é feita
+# exclusivamente pelo pacote Python `cientometria`. Ver MIGRATION.md.
 suppressPackageStartupMessages({
   library(jsonlite)
   library(readxl)
