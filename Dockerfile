@@ -64,5 +64,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -fsS -o /dev/null http://127.0.0.1:8000/ || exit 1
 
 # router.php: só os pontos de entrada PHP são servidos (nunca /dados, código ou .git).
-CMD ["php", "-d", "upload_max_filesize=256M", "-d", "post_max_size=256M", "-d", "max_file_uploads=50", \
+CMD ["php", "-d", "upload_max_filesize=512M", "-d", "post_max_size=512M", "-d", "max_file_uploads=50", \
      "-d", "max_execution_time=0", "-d", "expose_php=0", "-S", "0.0.0.0:8000", "router.php"]

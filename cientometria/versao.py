@@ -6,7 +6,8 @@ Toda alteração em `nucleo.py`, `termos.py`, `pipeline.consolidar` ou em receit
 `Config` que mude números deve criar uma nova entrada em METODO_HISTORICO.
 """
 
-APP_VERSAO = "0.2.1"  # 0.2.1: fidelidade do modo original com títulos ausentes (achado 11)
+APP_VERSAO = "0.3.0"  # 0.3.0: exportação/importação de execuções em ZIP (não altera resultados)
+#                      0.2.1: fidelidade do modo original com títulos ausentes (achado 11)
 
 # modo -> versão vigente do conjunto de regras
 METODO_VERSOES = {

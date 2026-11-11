@@ -22,6 +22,8 @@
 
 - Todo endpoint PHP inclui `seguranca.php`: POST com `seg_exigir_post_protegido()` (acesso, origem, CSRF),
   páginas com `seg_pagina()`. Scripts só com `nonce`; nada de `onclick=`/`innerHTML` com dado não escapado.
+- Pacotes ZIP só por `seg_receber_pacote()` e `pacote.inspecionar()` antes de qualquer extração; nunca
+  extrair com `ZipFile.extractall` nem executar/abrir conteúdo do pacote.
 - Uploads só por `seg_receber_uploads()` em diretório temporário fora do webroot; o Python revalida
   (`ingestao.validar_conteudo`) e confina a importação (`CIENTOMETRIA_DIR_IMPORTACAO`).
 - Identificadores vindos da web (projeto, execução, arquivo) sempre validados por regex em `projetos.py`.
@@ -51,6 +53,8 @@ python tests/regressao/gerar_esperado.py  # SÓ para mudança intencional e docu
 - Entrada de arquivos: `ingestao.py` (formatos, tipo de base, ordem canônica, leitura original).
 - Interface ↔ pacote: `parametros.py` (JSON → Config), `saida.py`, `api.py`.
 - Projetos/execuções: `projetos.py`, `manifesto.py`, `relatorios.py`, `graficos.py`.
+- Pacote ZIP de execução: `pacote.py` (formato/validação) + métodos de `Projeto` (exportar, receber,
+  restaurar, reexecutar); ver `docs/EXPORTACAO_EXECUCOES.md`. Restaurar nunca recalcula; reexecutar cria novo ID.
 - Análises: `bibliometria.py` (descritivas; não alteram a triagem).
 - Auditoria: `auditoria.py`, `diagnostico.py`, `robustez.py`, `validacao.py`, `docs/AUDITORIA.md`.
 

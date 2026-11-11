@@ -1,0 +1,44 @@
+# tests/test_pacote.py + tests/test_interface.py — 2026-11-11T13:30:02Z — commit base adfa0e1 + alterações desta branch
+# dados SINTÉTICOS: verificam o mecanismo do pacote ZIP, não a reprodução do artigo
+tests/test_pacote.py::test_01_ida_e_volta_integra PASSED
+tests/test_pacote.py::test_01b_exportacao_reproduzivel_e_reimportavel PASSED
+tests/test_pacote.py::test_02_arquivo_ausente PASSED
+tests/test_pacote.py::test_03_arquivo_alterado_apos_exportacao PASSED
+tests/test_pacote.py::test_04_hash_incorreto_no_manifesto PASSED
+tests/test_pacote.py::test_04b_adulteracao_coerente_detectada_pelo_manifesto_da_execucao PASSED
+tests/test_pacote.py::test_08_arquivos_inesperados PASSED
+tests/test_pacote.py::test_05_zip_invalido_ou_malformado PASSED
+tests/test_pacote.py::test_06_zip_bomb PASSED
+tests/test_pacote.py::test_06b_tamanho_declarado_falso_nao_engana_a_leitura PASSED
+tests/test_pacote.py::test_07_path_traversal[../fora.csv] PASSED
+tests/test_pacote.py::test_07_path_traversal[/etc/passwd] PASSED
+tests/test_pacote.py::test_07_path_traversal[execucao/../../fora.csv] PASSED
+tests/test_pacote.py::test_07_path_traversal[..\\..\\fora.csv] PASSED
+tests/test_pacote.py::test_07_path_traversal[C:/Windows/x.csv] PASSED
+tests/test_pacote.py::test_07_path_traversal[execucao//x.csv] PASSED
+tests/test_pacote.py::test_07_path_traversal[./manifesto.json] PASSED
+tests/test_pacote.py::test_07_path_traversal[entradas/.oculto.csv] PASSED
+tests/test_pacote.py::test_07_path_traversal[execucao/20260101T000000Z_aaaaaaaaaaaa/../../../x.csv] PASSED
+tests/test_pacote.py::test_07_path_traversal[nome\x00.csv] PASSED
+tests/test_pacote.py::test_07b_link_simbolico_e_arquivo_especial PASSED
+tests/test_pacote.py::test_07c_extracao_nunca_escapa_do_destino PASSED
+tests/test_pacote.py::test_09_dados_originais_omitidos PASSED
+tests/test_pacote.py::test_09b_entradas_ausentes_no_projeto_de_origem_sao_omitidas_com_motivo PASSED
+tests/test_pacote.py::test_10_restaurar_nao_recalcula PASSED
+tests/test_pacote.py::test_11_reexecutar_cria_novo_id_e_referencia_a_origem PASSED
+tests/test_pacote.py::test_11b_reexecucao_recusa_versao_de_metodo_desconhecida PASSED
+tests/test_pacote.py::test_12_compatibilidade_de_versoes PASSED
+tests/test_pacote.py::test_13_importacoes_concorrentes PASSED
+tests/test_pacote.py::test_13b_mesmo_id_com_conteudo_diferente_e_recusado PASSED
+tests/test_pacote.py::test_14_interrupcao_durante_a_restauracao PASSED
+tests/test_pacote.py::test_14b_queda_do_processo_deixa_temporarios_que_recuperar_remove PASSED
+tests/test_pacote.py::test_exportacao_recusa_resultados_alterados PASSED
+tests/test_pacote.py::test_exportacao_e_recebimento_confinados PASSED
+tests/test_pacote.py::test_inventario_e_descarte PASSED
+tests/test_pacote.py::test_api_despachar PASSED
+tests/test_pacote.py::test_cli PASSED
+tests/test_pacote.py::test_endpoints_php PASSED
+tests/test_pacote.py::test_leitura_limitada_de_entrada_unica PASSED
+tests/test_interface.py::test_fluxo_completo_do_dashboard PASSED
+tests/test_interface.py::test_triagem_rapida PASSED
+======================== 41 passed in 98.45s (0:01:38) =========================

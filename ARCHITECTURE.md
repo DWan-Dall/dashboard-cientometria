@@ -29,7 +29,8 @@ Navegador ──► index.php / triagem_rapida.php  (exibição)
  │ parametros    JSON da interface → Config (fonte única)               │
  │ diagnostico · robustez · validacao · auditoria                       │
  │ bibliometria · graficos · relatorios                                 │
- │ manifesto     manifesto de reprodução e comparação                   │
+ │ manifesto     manifesto de reprodução e comparação (+ do pacote ZIP) │
+ │ pacote        formato ZIP de execução: montar, validar, extrair      │
  │ projetos      projetos, arquivos imutáveis, execuções, histórico     │
  │ saida · api   contratos JSON                                         │
  └───────────────────────────────────────────────────────────────────────┘
@@ -58,6 +59,7 @@ Navegador ──► index.php / triagem_rapida.php  (exibição)
 | D14 | Travas `fcntl`, escrita atômica e SHA-256 de entradas e saídas | Concorrência e integridade sem banco de dados |
 | D15 | `compat_r.py` separado de `bibliometria.py` | Provar a fidelidade do porte sem herdar as escolhas questionáveis do R |
 | D16 | CI com arquivos congelados verificados por hash | Mudança no modo original vira decisão explícita |
+| D17 | Pacote ZIP de execução estende `projetos`/`manifesto` (sem 2º sistema de persistência); restaurar ≠ reexecutar | Levar execuções entre projetos/máquinas com integridade verificável; restaurar não recalcula, reexecutar cria novo ID com `origem_execucao` (docs/EXPORTACAO_EXECUCOES.md) |
 
 ## Contratos
 

@@ -93,7 +93,7 @@ def _kpi(pg, rotulo):
     return pg.locator(f".kpi:has(.l:text-is('{rotulo}')) .v").first.text_content()
 
 
-def test_fluxo_completo_do_dashboard(base, pagina, sinteticos):
+def test_fluxo_completo_do_dashboard(base, pagina, sinteticos, tmp_path):
     pg = pagina
     pg.goto(base + "/")
     # nome com marcação HTML: deve aparecer como texto, sem criar elemento
@@ -142,14 +142,43 @@ def test_fluxo_completo_do_dashboard(base, pagina, sinteticos):
     pg.click("#btCmp")
     pg.wait_for_selector("#cmpOut table")
     assert "Núcleo A em ambos" in pg.text_content("#cmpOut")
-    pg.locator("#tbExec button[data-acao=reproduzir]").first.click()
-    expect(pg.locator("#cmpOut")).to_contain_text("mesmo corpus (hash)", timeout=120000)
+    pg.locator("#tbExec button[data-acao=reexecutar]").first.click()
+    expect(pg.locator("#cmpOut")).to_contain_text("mesmo corpus (hash)", timeout=180000)
     assert "NÃO" not in pg.text_content("#cmpOut .grid")
+    expect(pg.locator("#tbExec tbody tr")).to_have_count(3, timeout=30000)
+    expect(pg.locator("#tbExec .tag", has_text="reexecução de")).to_have_count(1)
+    pg.locator("#tbExec button[data-acao=verificar]").first.click()
+    expect(pg.locator("#cmpOut")).to_contain_text("resultados íntegros", timeout=60000)
+    assert "NÃO" not in pg.text_content("#cmpOut .grid")
+    pg.locator("#tbExec button[data-acao=inventario]").first.click()
+    expect(pg.locator("#cmpOut")).to_contain_text("Exportações de origem", timeout=60000)
     # relatórios: links funcionam
     pg.click("nav >> text=7. Relatórios")
     href = pg.locator("#relOut a", has_text="resultados.xlsx").get_attribute("href")
     resp = pg.request.get(base + "/" + href)
     assert resp.status == 200 and resp.headers["content-type"].startswith("application/vnd.openxmlformats")
+    # exportar ZIP (download pelo navegador) e restaurar noutro projeto pela interface
+    pg.click("nav >> text=6. Execuções")
+    with pg.expect_download(timeout=180000) as dl:
+        pg.locator("#tbExec button[data-acao=exportar]").first.click()
+    zp = tmp_path / dl.value.suggested_filename
+    dl.value.save_as(zp)
+    from cientometria.pacote import inspecionar
+    inv = inspecionar(zp)
+    assert inv["ok"] and len(inv["fontes"]) == 8 and all(f["incluido"] for f in inv["fontes"])
+    pg.click("nav >> text=1. Projetos")
+    pg.fill("#pNome", "Destino UI")
+    pg.click("#btCriar")
+    expect(pg.locator("#projAtual")).to_contain_text("Destino UI")
+    pg.click("nav >> text=6. Execuções")
+    pg.set_input_files("#fPacote", str(zp))
+    pg.click("#btPacote")
+    expect(pg.locator("#pacoteOut")).to_contain_text("pacote íntegro", timeout=120000)
+    assert pg.locator("#pacoteOut .erro").count() == 0
+    pg.click("#btRestaurar")
+    expect(pg.locator("#pacoteOut")).to_contain_text("restaurada", timeout=120000)
+    expect(pg.locator("#tbExec tbody tr")).to_have_count(1, timeout=30000)
+    expect(pg.locator("#tbExec .tag", has_text="importada de")).to_have_count(1)
     assert pg.evaluate("() => window.__xss") is None
     assert pg.erros == []
 

@@ -15,7 +15,8 @@ import sys
 
 RAIZ = pathlib.Path(__file__).resolve().parents[1]
 PERMITIDOS = {"docs/log_buscas_template.csv", "exemplos/referencias_dias2025.csv"}
-EXT_DADOS = {".csv", ".tsv", ".xlsx", ".xls", ".ris", ".bib", ".bibtex", ".nbib"}
+EXT_DADOS = {".csv", ".tsv", ".xlsx", ".xls", ".ris", ".bib", ".bibtex", ".nbib",
+             ".zip"}  # .zip: pacotes de execução podem conter as exportações das bases
 
 
 def main() -> int:

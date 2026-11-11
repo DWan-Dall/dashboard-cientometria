@@ -137,6 +137,8 @@ O retrato do processamento (`tests/regressao/esperado.json`) usa dados sintétic
 6. **Revisão por terceiros**: esta validação foi feita pelo mesmo agente que implementou as correções; o script
    de caixa-preta reduz, mas não elimina, esse viés. Recomenda-se revisão humana independente.
 7. **Dados reais**: testes com as exportações originais não foram executados (arquivos indisponíveis).
+8. **Pacotes ZIP sem assinatura** (Z6): integridade verificável, autenticidade não; arquivos restaurados são
+   guardados sem sanitização (Z5).
 
 ## 6. Como repetir
 
@@ -148,3 +150,23 @@ python -m pytest -q
 php -S 127.0.0.1:8000 router.php &
 python scripts/validacao_seguranca.py --base http://127.0.0.1:8000
 ```
+
+## 7. Pacote ZIP de execução (superfície nova, rodada 4)
+
+A importação de pacotes (`docs/EXPORTACAO_EXECUCOES.md`) aceita um arquivo compactado vindo de fora.
+As ameaças foram tratadas antes da publicação. Cada linha tem teste automatizado em `tests/test_pacote.py`
+(dados sintéticos).
+
+| ID | Ameaça | Controle | Teste(s) | Risco residual |
+|---|---|---|---|---|
+| Z1 | Path traversal / escrita fora do destino (`../`, absoluto, `\`, `C:/`, NUL, componentes vazios) | nomes validados contra a estrutura fixa antes de qualquer leitura; extração revalida, confina ao destino e grava com `open(…, "xb")` | `test_07_path_traversal` (10), `test_07c_extracao_nunca_escapa_do_destino` | — |
+| Z2 | Link simbólico, dispositivo ou FIFO dentro do ZIP; pacote enviado como link | bits de tipo em `external_attr` (só arquivo regular ou sem tipo); `is_symlink()` na origem | `test_07b_link_simbolico_e_arquivo_especial` | — |
+| Z3 | Zip bomb e esgotamento de disco | razão de compressão ≤ 200 (acima de 1 MiB), total descompactado ≤ 4096 MiB, ≤ 5.000 entradas, ZIP ≤ 512 MiB; leitura em blocos que nunca passa do tamanho declarado; limites de memória e tempo do processo (H6) | `test_06_zip_bomb`, `test_06b_tamanho_declarado_falso_nao_engana_a_leitura` | Um pacote dentro dos limites ainda ocupa disco (até ~4 GiB) e tempo |
+| Z4 | ZIP malformado (truncado, CRC errado, deflate inválido, criptografado, duplicatas, inclusive só na caixa) | recusado com `PacoteInvalido`. **Achado durante o desenvolvimento**: dado deflate corrompido levantava `zlib.error`, que escapava da conversão. Reproduzido pelo teste, corrigido em `_ler_limitado` | `test_05_zip_invalido_ou_malformado` | — |
+| Z5 | Conteúdo executável ou fora do esperado (scripts, HTML, arquivos de outra execução) | estrutura fixa com extensões permitidas por área; arquivo não listado no manifesto = problema; nada do pacote é executado, importado como código ou aberto (planilhas restauradas não são lidas) | `test_08_arquivos_inesperados` | Os arquivos de resultado restaurados são guardados byte a byte, sem sanitização (é o que preserva a integridade). Um pacote hostil pode trazer, por exemplo, um CSV de relatório com fórmula. `arquivo.php` serve tudo, exceto PNG, como download (`attachment`, `nosniff`), e a interface escapa todo dado exibido |
+| Z6 | Resultados adulterados (arquivo ausente, alterado, hash errado, adulteração coerente do arquivo e do manifesto do pacote) | SHA-256 de cada arquivo na inspeção e na extração; conferência contra `saidas_sha256` e o hash do corpus do manifesto da **execução** | `test_02_…`, `test_03_…`, `test_04_…`, `test_04b_adulteracao_coerente_…` | **Sem assinatura**: quem reescreve resultado, manifesto da execução e manifesto do pacote de forma consistente produz um pacote coerente. Autenticidade depende da fonte e do SHA-256 informado por quem exportou |
+| Z7 | Sobrescrever uma execução existente reaproveitando o ID | sob trava: ID existente com conteúdo diferente = recusa; idêntico = `ja_existia` | `test_13b_mesmo_id_com_conteudo_diferente_e_recusado` | — |
+| Z8 | Caminho arbitrário via API (`caminho`, `destino` no JSON) | PHP remove os campos; o upload só chega pelo campo `pacote` (`.zip`); Python confina a `CIENTOMETRIA_DIR_IMPORTACAO`/`_EXPORTACAO`; token por regex; nome do download por regex | `test_exportacao_e_recebimento_confinados`, `test_endpoints_php` | — |
+| Z9 | Corridas e quedas (restauração simultânea, interrupção no meio) | pasta temporária invisível + renomeação atômica sob `_trava`; `recuperar()` remove temporários | `test_13_importacoes_concorrentes`, `test_14_…`, `test_14b_…` | `fcntl` em NFS antigo (como P1) |
+| Z10 | Vazamento de dados licenciados pelo pacote | exportar sem entradas (só SHA-256); aviso na interface; `*.zip` no `.gitignore`; `verificar_repositorio.py` falha com `.zip` versionado | `test_09_dados_originais_omitidos` | A opção "incluir entradas" vem marcada (pacote completo); a decisão de compartilhar é de quem exporta |
+| Z11 | CSRF/origem no upload e no download | `seg_exigir_post_protegido()` em `api.php` para todas as ações novas | `test_endpoints_php` (sem token → 403) | — |

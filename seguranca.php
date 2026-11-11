@@ -233,4 +233,26 @@ if (!defined('CIENTOMETRIA_SEGURANCA')) {
     }
     return $saida;
   }
+
+  // Um único pacote ZIP de execução (campo "pacote"). Só o recebe; toda a validação do conteúdo
+  // (estrutura, caminhos, links, zip bomb, SHA-256) é do Python (cientometria/pacote.py).
+  function seg_receber_pacote($dir) {
+    if (!isset($_FILES['pacote']) || is_array($_FILES['pacote']['name'])) {
+      seg_negar(400, 'Envie um único arquivo .zip no campo "pacote".');
+    }
+    $max = (int)(getenv('CIENTOMETRIA_MAX_MB_PACOTE') ?: 512) * 1024 * 1024;
+    $erro = $_FILES['pacote']['error'];
+    if ($erro !== UPLOAD_ERR_OK) seg_negar(400, "Falha no upload do pacote (código $erro).");
+    $ext = strtolower(pathinfo((string)$_FILES['pacote']['name'], PATHINFO_EXTENSION));
+    if ($ext !== 'zip') seg_negar(415, 'O pacote deve ser um arquivo .zip.');
+    $tam = (int)$_FILES['pacote']['size'];
+    if ($tam <= 0 || $tam > $max) seg_negar(413, 'Pacote vazio ou maior que o limite.');
+    $destino = $dir . '/pacote.zip';
+    if (!is_uploaded_file($_FILES['pacote']['tmp_name'])
+        || !move_uploaded_file($_FILES['pacote']['tmp_name'], $destino)) {
+      seg_negar(400, 'Falha ao receber o pacote.');
+    }
+    @chmod($destino, 0600);
+    return $destino;
+  }
 }

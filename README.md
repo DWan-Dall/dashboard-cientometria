@@ -41,7 +41,7 @@ Para testes e verificações: `pip install -r requirements-dev.txt`.
 ## Dashboard
 
 ```bash
-php -d upload_max_filesize=256M -d post_max_size=256M -d max_file_uploads=50 -S 127.0.0.1:8000 router.php
+php -d upload_max_filesize=512M -d post_max_size=512M -d max_file_uploads=50 -S 127.0.0.1:8000 router.php
 ```
 
 Use sempre `router.php`: sem ele, o servidor embutido do PHP serve qualquer arquivo da pasta, inclusive
@@ -126,6 +126,23 @@ python -m cientometria reproduzir revisao-enchentes <id>
 Cada execução cria `projetos/<projeto>/execucoes/<data>_<id>/` com `manifesto.json`, `corpus.csv`,
 `consolidado.csv`, `diagnosticos/` (campos ausentes, limitações, duplicatas para revisão), `bibliometria/`,
 `graficos/` (PNG 300 dpi) e `relatorios/` (CSV, XLSX, PDF, relatório metodológico em Markdown, parâmetros).
+
+### Exportar e importar execuções (ZIP)
+
+Cada execução pode ser baixada como um ZIP completo (resultados, diagnósticos, bibliometria, redes,
+gráficos, relatórios PDF/MD/XLSX e manifesto com o SHA-256 de cada arquivo), com ou sem as exportações
+originais das bases (licença!). Importar mostra o inventário antes de qualquer alteração; **restaurar**
+recupera os resultados sem recalcular, preservando ID e procedência; **reexecutar** cria uma execução nova
+a partir dos arquivos e parâmetros registrados, e só é possível com as exportações de origem.
+
+```bash
+python -m cientometria exportar <projeto> <id> [--sem-entradas] [--saida pasta]
+python -m cientometria verificar-pacote pacote.zip
+python -m cientometria importar-pacote <projeto> pacote.zip
+python -m cientometria reexecutar <projeto> <id>
+```
+
+Detalhes, formato e garantias: `docs/EXPORTACAO_EXECUCOES.md`.
 
 ## Uso como biblioteca
 
