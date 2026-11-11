@@ -4,3 +4,5 @@ __pycache__/
 tmp_uploads/
 projetos/
 *.tmp
+# pacotes de execução exportados podem conter exportações licenciadas das bases
+*.zip

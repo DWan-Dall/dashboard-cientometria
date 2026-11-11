@@ -39,6 +39,11 @@
 
 ## Funcionalidades
 
+- [x] Exportar/importar execuções completas em ZIP verificável (restaurar sem recalcular; reexecutar com
+      novo ID) — `docs/EXPORTACAO_EXECUCOES.md`, `tests/test_pacote.py`.
+- [ ] Assinatura digital opcional dos pacotes ZIP (hoje: integridade por SHA-256, sem autenticidade).
+- [ ] Sanitizar na exibição/download os relatórios vindos de pacotes de terceiros (hoje guardados byte a byte).
+
 - [ ] Gravar decisões da revisão de duplicatas pela interface (hoje: CSV com coluna `decisao`).
 - [ ] Sankey base × versão da busca (existia no R com networkD3).
 - [ ] Co-citação/acoplamento exigem referências: documentar quais exportações as trazem (Scopus CSV "References",

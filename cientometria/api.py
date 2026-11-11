@@ -11,6 +11,10 @@ Linha de comando para pesquisadores (sem dashboard):
     python3 -m cientometria comparar <slug> <id_a> <id_b>
     python3 -m cientometria reproduzir <slug> <id>
     python3 -m cientometria verificar-corpus DB_Cientometria_COMPLETA.csv
+    python3 -m cientometria exportar <slug> <id> [--sem-entradas] [--saida pasta]
+    python3 -m cientometria verificar-pacote pacote.zip
+    python3 -m cientometria importar-pacote <slug> pacote.zip [--sem-entradas]
+    python3 -m cientometria reexecutar <slug> <id>
 """
 from __future__ import annotations
 import argparse
@@ -100,6 +104,22 @@ def despachar(acao: str, dados: dict) -> dict:
         return p.reproduzir(dados["id"])
     if acao == "verificar_execucao":
         return p.verificar_execucao(dados["id"])
+    # pacote ZIP: exportar (destino confinado por CIENTOMETRIA_DIR_EXPORTACAO), receber (origem
+    # confinada por CIENTOMETRIA_DIR_IMPORTACAO), inspecionar/restaurar/descartar por token
+    if acao == "inventario_execucao":
+        return p.inventario_execucao(dados["id"], bool(dados.get("incluir_entradas", True)))
+    if acao == "exportar_execucao":
+        return p.exportar_execucao(dados["id"], dados["destino"], bool(dados.get("incluir_entradas", True)))
+    if acao == "receber_pacote":
+        return p.receber_pacote(dados["caminho"])
+    if acao == "inspecionar_pacote":
+        return p.inspecionar_pacote(dados["token"])
+    if acao == "restaurar_pacote":
+        return p.restaurar_pacote(dados["token"], bool(dados.get("importar_entradas", True)))
+    if acao == "descartar_pacote":
+        return p.descartar_pacote(dados["token"])
+    if acao == "reexecutar":
+        return p.reexecutar(dados["id"])
     if acao == "comparar_modos":
         from .pipeline import executar
         bases, fontes = p.carregar(Config.original(), dados.get("arquivos"))
@@ -161,6 +181,20 @@ def principal_cli(argv=None):
     s = sub.add_parser("reproduzir")
     s.add_argument("projeto")
     s.add_argument("id")
+    s = sub.add_parser("exportar", help="exporta uma execução completa como ZIP verificável")
+    s.add_argument("projeto")
+    s.add_argument("id")
+    s.add_argument("--sem-entradas", action="store_true", help="omite as exportações originais (licença)")
+    s.add_argument("--saida", default=".")
+    s = sub.add_parser("verificar-pacote", help="valida um ZIP de execução sem importar")
+    s.add_argument("pacote")
+    s = sub.add_parser("importar-pacote", help="restaura uma execução de um ZIP (sem recalcular)")
+    s.add_argument("projeto")
+    s.add_argument("pacote")
+    s.add_argument("--sem-entradas", action="store_true", help="não importa as exportações incluídas")
+    s = sub.add_parser("reexecutar", help="nova execução com os arquivos e parâmetros de outra")
+    s.add_argument("projeto")
+    s.add_argument("id")
     s = sub.add_parser("verificar-corpus")
     s.add_argument("arquivo")
     s = sub.add_parser("referencia")
@@ -190,6 +224,27 @@ def principal_cli(argv=None):
         imp(Projeto.abrir(a.projeto, a.raiz).comparar(a.a, a.b))
     elif a.cmd == "reproduzir":
         imp(Projeto.abrir(a.projeto, a.raiz).reproduzir(a.id))
+    elif a.cmd == "exportar":
+        imp(Projeto.abrir(a.projeto, a.raiz).exportar_execucao(a.id, Path(a.saida), not a.sem_entradas))
+    elif a.cmd == "verificar-pacote":
+        from .pacote import inspecionar
+        inv = inspecionar(a.pacote)
+        imp({k: v for k, v in inv.items() if k != "arquivos"} | {"arquivos_com_problema": [
+            x for x in inv["arquivos"] if x["estado"] != "ok"]})
+        if not inv["ok"]:
+            sys.exit(2)
+    elif a.cmd == "importar-pacote":
+        p = Projeto.abrir(a.projeto, a.raiz)
+        inv = p.receber_pacote(a.pacote)
+        if not inv["ok"]:
+            p.descartar_pacote(inv["token"])
+            imp({"erro": "pacote com problemas", "problemas": inv["problemas"]})
+            sys.exit(2)
+        imp(p.restaurar_pacote(inv["token"], not a.sem_entradas))
+    elif a.cmd == "reexecutar":
+        r = Projeto.abrir(a.projeto, a.raiz).reexecutar(a.id)
+        imp({k: r[k] for k in ("id", "origem", "avisos")} | {
+            "mesmo_corpus": r["comparacao"]["mesmo_corpus"], "contagens": r["comparacao"]["contagens"]})
     elif a.cmd == "verificar-corpus":
         from .auditoria import verificar_corpus_publicado
         imp(verificar_corpus_publicado(a.arquivo))

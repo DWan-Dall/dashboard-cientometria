@@ -110,3 +110,56 @@ def comparar(a: dict, b: dict) -> dict:
         "nucleo_a": {"so_em_a": sorted(na - nb), "so_em_b": sorted(nb - na), "em_ambos": len(na & nb)},
         "dependencias": dif(a["dependencias"], b["dependencias"]),
     }
+
+
+# ---------------------------------------------------------------- pacote ZIP de uma execução
+DECLARACAO_INTEGRAL = ("Todas as exportações bibliográficas de origem estão no pacote, com SHA-256 conferido: "
+                       "a análise pode ser reexecutada com os mesmos arquivos e parâmetros.")
+DECLARACAO_PARCIAL = ("Exportações de origem omitidas ({n} de {t}). Os resultados podem ser restaurados e "
+                      "conferidos (SHA-256 de cada arquivo e hash do corpus), mas a análise NÃO pode ser "
+                      "reexecutada só com este pacote. Os SHA-256 das exportações omitidas permitem conferir "
+                      "cópias obtidas por outro meio.")
+
+
+def pacote(man: dict, pasta: str, fontes: list, omitidos: list, projeto: dict, verificacao: dict) -> dict:
+    """Manifesto do pacote ZIP, derivado do manifesto da execução (que viaja intacto no pacote).
+
+    fontes: as fontes de `man["fontes"]` acrescidas de incluido/caminho_no_pacote/motivo_omissao.
+    O campo `arquivos` (SHA-256 e bytes de cada arquivo gravado) é preenchido por pacote.montar()."""
+    from .pacote import FORMATO, VERSAO_FORMATO
+    n_omit = sum(1 for f in fontes if not f.get("incluido"))
+    integral = bool(fontes) and n_omit == 0
+    return {
+        "formato": FORMATO,
+        "versao_formato": VERSAO_FORMATO,
+        "exportado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "versao_aplicacao_exportacao": APP_VERSAO,
+        "dependencias_exportacao": versoes_dependencias(),
+        "execucao": {
+            "id": man["id"], "pasta": pasta, "rotulo": man.get("rotulo", ""),
+            "data_hora_utc": man.get("data_hora_utc"), "versao_aplicacao": man.get("versao_aplicacao"),
+            "modo": man.get("modo"), "versao_metodo": man.get("versao_metodo"),
+            "configuracao_personalizada": man.get("configuracao_personalizada"),
+            "hash_corpus": man.get("hash_corpus"),
+            "impressao_digital_entrada": man.get("impressao_digital_entrada"),
+            "origem_execucao": man.get("origem_execucao"),
+            "manifesto": f"execucao/{pasta}/manifesto.json",
+        },
+        "projeto_origem": projeto,
+        "parametros": man.get("parametros", {}),
+        "contagens_por_etapa": man.get("contagens", {}),
+        "estratos": man.get("estratos", {}),
+        "dependencias": man.get("dependencias", {}),
+        "fontes": fontes,
+        "omitidos": omitidos,
+        "reprodutibilidade": {
+            "entradas_total": len(fontes), "entradas_incluidas": len(fontes) - n_omit,
+            "reexecucao_possivel_so_com_o_pacote": integral,
+            "declaracao": DECLARACAO_INTEGRAL if integral else DECLARACAO_PARCIAL.format(n=n_omit, t=len(fontes)),
+        },
+        "verificacao_na_exportacao": verificacao,
+        "licenca": ("As exportações das bases bibliográficas (Scopus, WoS, Lens, IEEE etc.) podem ter licença "
+                    "restrita. Não publique este pacote se ele contiver os arquivos de entrada sem verificar a "
+                    "licença de cada base."),
+        "arquivos": {},
+    }

@@ -151,9 +151,21 @@
 
     <!-- 6. EXECUÇÕES -->
     <section class="secao" id="s-execucoes">
-      <div class="card"><h2>Execuções do projeto</h2><div class="tabela" id="tbExec"></div>
+      <div class="card"><h2>Execuções do projeto</h2>
+        <p class="small"><b>Exportar ZIP</b> baixa a execução completa (resultados, diagnósticos, bibliometria, gráficos, relatórios,
+          manifesto com SHA-256 de cada arquivo). <b>Verificar</b> reconfere os SHA-256 e o hash do corpus. <b>Reexecutar</b> cria uma
+          execução NOVA (novo ID) com os mesmos arquivos e parâmetros, referenciando a de origem; exige as exportações originais.</p>
+        <label class="small"><input type="checkbox" id="exEntradas" checked> incluir no ZIP as exportações bibliográficas originais
+          (verifique a licença de cada base antes de compartilhar; sem elas o pacote permite conferir, mas não reexecutar)</label>
+        <div class="tabela" id="tbExec"></div>
         <div class="row"><label>A <select id="cmpA"></select></label><label>B <select id="cmpB"></select></label>
           <button class="btn sec" id="btCmp">Comparar</button></div><div id="cmpOut"></div></div>
+      <div class="card"><h2>Importar ZIP de execução</h2>
+        <p class="small">O pacote é validado (estrutura, caminhos, tamanhos, SHA-256 de cada arquivo) e o inventário é mostrado
+          <b>antes</b> de qualquer alteração no projeto. <b>Restaurar</b> recupera os resultados como foram calculados, com o ID e a
+          procedência originais, sem recalcular nada.</p>
+        <div class="row"><input type="file" id="fPacote" accept=".zip"><button class="btn" id="btPacote">Importar ZIP</button></div>
+        <div id="pacoteOut"></div></div>
     </section>
 
     <!-- 7. RELATÓRIOS -->
@@ -311,7 +323,9 @@ function renderExecucoes(ex) {
   $('tbExec').innerHTML = ex.length ? `<table><thead><tr><th>id</th><th>data (UTC)</th><th>rótulo</th><th>modo</th><th>versão</th><th>únicos</th><th>corpus</th><th>A/B/P/D</th><th></th></tr></thead><tbody>${
     ex.slice().reverse().map(e => `<tr><td><code>${esc(e.id)}</code></td><td>${esc(e.data_hora_utc)}</td><td>${esc(e.rotulo)}</td><td>${esc(e.modo)}${e.personalizada ? ' *' : ''}</td><td>${esc(e.versao_metodo)}</td>
       <td>${fmt(e.contagens.unicos)}</td><td>${fmt(e.contagens.corpus)}</td><td>${Object.values(e.estratos).join(' / ')}</td>
-      <td><button class="btn sec" data-acao="abrirExecucao" data-arg="${esc(e.id)}">abrir</button> <button class="btn sec" data-acao="reproduzir" data-arg="${esc(e.id)}">reproduzir</button></td></tr>`).join('')}</tbody></table><p class="small">* configuração personalizada</p>`
+      <td>${['abrirExecucao:abrir', 'inventario:inventário', 'exportar:exportar ZIP', 'verificar:verificar', 'reexecutar:reexecutar']
+        .map(x => x.split(':')).map(([a, t]) => `<button class="btn sec" data-acao="${a}" data-arg="${esc(e.id)}">${t}</button>`).join(' ')}
+        ${e.importada ? `<br><span class="tag">importada de ${esc(e.projeto_origem || '?')}</span>` : ''}${e.origem_execucao ? `<br><span class="tag">reexecução de ${esc(e.origem_execucao)}</span>` : ''}</td></tr>`).join('')}</tbody></table><p class="small">* configuração personalizada</p>`
     : '<p class="small">Nenhuma execução.</p>';
   const ops = ex.map(e => `<option value="${esc(e.id)}">${esc(e.id)} · ${esc(e.modo)} · ${esc(e.data_hora_utc)}</option>`).join('');
   $('cmpA').innerHTML = ops; $('cmpB').innerHTML = ops;
@@ -322,6 +336,84 @@ window.reproduzir = seguro(async id => {
   $('cmpOut').innerHTML = `<h3>Reprodução de ${esc(id)}</h3>` + kpis({'mesma entrada e parâmetros': c.mesma_entrada_e_parametros ? 'sim' : 'não', 'mesmo corpus (hash)': c.mesmo_corpus ? 'sim' : 'NÃO'})
     + '<pre>' + esc(JSON.stringify(c, null, 1)) + '</pre>';
   await abrirProjeto(E.projeto);
+});
+// ---- pacote ZIP: exportar, inventário, verificar, reexecutar, importar ----
+const simnao = v => v ? 'sim' : 'NÃO';
+window.reexecutar = seguro(async id => {
+  $('cmpOut').innerHTML = '<p class="small">reexecutando (nova execução)…</p>';
+  const r = await api('reexecutar', {projeto: E.projeto, id}), c = r.comparacao;
+  $('cmpOut').innerHTML = `<h3>Reexecução de ${esc(id)} → nova execução ${esc(r.id)}</h3>`
+    + kpis({'mesma entrada e parâmetros': simnao(c.mesma_entrada_e_parametros), 'mesmo corpus (hash)': simnao(c.mesmo_corpus),
+            'Núcleo A em ambos': c.nucleo_a.em_ambos})
+    + (r.avisos.length ? '<div class="aviso">' + r.avisos.map(esc).join('<br>') + '</div>' : '')
+    + '<h3>Contagens diferentes</h3>' + tabela(Object.entries(c.contagens).map(([k, v]) => ({item: k, origem: v.a, nova: v.b})));
+  await abrirProjeto(E.projeto);
+});
+window.verificar = seguro(async id => {
+  const v = await api('verificar_execucao', {projeto: E.projeto, id});
+  $('cmpOut').innerHTML = `<h3>Verificação de ${esc(id)}</h3>` + kpis({'resultados íntegros': simnao(v.ok), 'reexecução possível': simnao(v.reexecucao_possivel),
+      importada: v.importada ? 'sim' : 'não'})
+    + (v.problemas.length ? '<div class="erro">' + v.problemas.map(esc).join('<br>') + '</div>' : '<p class="small">SHA-256 das saídas e hash do corpus conferem com o manifesto.</p>')
+    + (v.avisos.length ? '<div class="aviso">' + v.avisos.map(esc).join('<br>') + '</div>' : '');
+});
+window.inventario = seguro(async id => {
+  const v = await api('inventario_execucao', {projeto: E.projeto, id, incluir_entradas: $('exEntradas').checked});
+  $('cmpOut').innerHTML = `<h3>Inventário do ZIP de ${esc(id)}</h3>` + kpis({arquivos: v.arquivos.length, 'MB': v.bytes_total / 1048576,
+      'exportável': simnao(v.exportavel), 'reexecutável só com o pacote': simnao(v.reexecucao_possivel_so_com_o_pacote)})
+    + (v.problemas.length ? '<div class="erro">' + v.problemas.map(esc).join('<br>') + '</div>' : '')
+    + '<h3>Exportações de origem</h3>' + tabela(v.fontes.map(f => ({arquivo: f.arquivo, sha256: f.sha256.slice(0, 16) + '…', registros: f.registros,
+      incluida: f.incluido ? 'sim' : 'não', motivo: f.motivo_omissao || ''})))
+    + '<h3>Arquivos</h3>' + tabela(v.arquivos);
+});
+window.exportar = seguro(async id => {
+  const r = await fetch('api.php?acao=exportar_execucao', {method: 'POST', credentials: 'same-origin',
+    headers: {'X-CSRF-Token': CSRF, 'Content-Type': 'application/json'},
+    body: JSON.stringify({projeto: E.projeto, id, incluir_entradas: $('exEntradas').checked})});
+  if (!(r.headers.get('content-type') || '').startsWith('application/zip')) {
+    const t = await r.text(); let j = {};
+    try { j = JSON.parse(t); } catch (_) { throw new Error('Falha na exportação: ' + t.slice(0, 300)); }
+    throw new Error(j.erro || 'Falha na exportação.');
+  }
+  const nome = ((r.headers.get('content-disposition') || '').match(/filename="([A-Za-z0-9_.-]+)"/) || [])[1] || 'execucao.zip';
+  const url = URL.createObjectURL(await r.blob());
+  const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  msg(`Pacote ${esc(nome)} gerado (SHA-256 ${esc((r.headers.get('x-pacote-sha256') || '').slice(0, 16))}…).`);
+  await abrirProjeto(E.projeto);
+});
+function mostrarPacote(v) {
+  const s = v.situacao_no_projeto || {}, ex = v.execucao;
+  let h = `<h3>Inventário do pacote: execução ${esc(ex.id)} <span class="tag">${esc(ex.modo)}</span><span class="tag">${esc(ex.versao_metodo)}</span></h3>`
+    + kpis({'pacote íntegro': simnao(v.ok), arquivos: v.n_arquivos, 'projeto de origem': (v.projeto_origem || {}).nome || '—',
+            'exportado em': v.exportado_em, 'já existe aqui': s.execucao_existente ? (s.identica ? 'sim (idêntica)' : 'SIM, DIFERENTE') : 'não',
+            'reexecução possível após restaurar': simnao(s.reexecucao_possivel_apos_restaurar)});
+  if (v.problemas.length) h += '<div class="erro"><b>Problemas (restauração bloqueada):</b><br>' + v.problemas.map(esc).join('<br>') + '</div>';
+  if (v.avisos.length) h += '<div class="aviso">' + v.avisos.map(esc).join('<br>') + '</div>';
+  h += `<p class="small">${esc((v.reprodutibilidade || {}).declaracao || '')}</p>`;
+  h += '<h3>Contagens por etapa</h3>' + kpis({...v.contagens_por_etapa, ...v.estratos});
+  h += '<h3>Exportações de origem</h3>' + tabela(v.fontes.map(f => ({arquivo: f.arquivo, sha256: f.sha256.slice(0, 16) + '…', registros: f.registros,
+    'no pacote': f.incluido ? 'sim' : 'não', motivo: f.motivo_omissao || ''})));
+  h += '<h3>Arquivos</h3>' + tabela(v.arquivos.map(a => ({caminho: a.caminho, bytes: a.bytes, estado: a.estado})));
+  h += `<div class="row"><label class="small"><input type="checkbox" id="pkEntradas" checked> importar também as exportações originais incluídas</label>
+    <button class="btn" id="btRestaurar" ${v.ok && !(s.execucao_existente && !s.identica) ? '' : 'disabled'}>Restaurar execução</button>
+    <button class="btn sec" id="btDescartar">Descartar</button></div>`;
+  $('pacoteOut').innerHTML = h;
+  $('btRestaurar').onclick = seguro(async () => {
+    $('btRestaurar').disabled = true;
+    const r = await api('restaurar_pacote', {projeto: E.projeto, token: v.token, importar_entradas: $('pkEntradas').checked});
+    $('pacoteOut').innerHTML = `<h3>Execução ${esc(r.id)} ${r.estado === 'restaurada' ? 'restaurada' : 'já existia (idêntica)'}</h3>`
+      + kpis({'resultados íntegros': simnao(r.verificacao.ok), 'entradas importadas': r.entradas_importadas.length,
+              'reexecução possível': simnao(r.verificacao.reexecucao_possivel)})
+      + (r.verificacao.avisos.length ? '<div class="aviso">' + r.verificacao.avisos.map(esc).join('<br>') + '</div>' : '');
+    await abrirProjeto(E.projeto);
+  });
+  $('btDescartar').onclick = seguro(async () => { await api('descartar_pacote', {projeto: E.projeto, token: v.token}); $('pacoteOut').innerHTML = '<p class="small">Pacote descartado.</p>'; });
+}
+$('btPacote').onclick = seguro(async () => {
+  const f = $('fPacote').files[0]; if (!f) throw new Error('Selecione um arquivo .zip.');
+  const fd = new FormData(); fd.append('pacote', f); fd.append('projeto', E.projeto);
+  $('btPacote').disabled = true; $('pacoteOut').innerHTML = '<p class="small">validando o pacote…</p>';
+  try { mostrarPacote(await api('receber_pacote', {}, fd)); } finally { $('btPacote').disabled = false; }
 });
 $('btCmp').onclick = seguro(async () => {
   const c = await api('comparar', {projeto: E.projeto, a: $('cmpA').value, b: $('cmpB').value});
@@ -335,7 +427,8 @@ $('btCmp').onclick = seguro(async () => {
 
 // ações dos botões gerados dinamicamente (sem handlers inline: CSP com nonce)
 const ACOES_BOTAO = {abrirProjeto: x => abrirProjeto(x), desativar: x => desativar(x),
-                     abrirExecucao: x => abrirExecucao(x), reproduzir: x => reproduzir(x)};
+                     abrirExecucao: x => abrirExecucao(x), reproduzir: x => reproduzir(x), reexecutar: x => reexecutar(x),
+                     verificar: x => verificar(x), inventario: x => inventario(x), exportar: x => exportar(x)};
 document.addEventListener('click', ev => {
   const b = ev.target.closest('button[data-acao]');
   if (b && ACOES_BOTAO[b.dataset.acao]) ACOES_BOTAO[b.dataset.acao](b.dataset.arg);
