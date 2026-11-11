@@ -78,6 +78,39 @@ exportações não é possível refazer autores, afiliações, áreas, palavras-
 | 9 | Gráficos | regeneração + inspeção | ✅ 17 gráficos correspondem aos CSVs; ⚠️ layout das redes não reproduzível entre versões de bibliotecas (co-citação: mesmos nós, posições diferentes) |
 | 10 | PDF × exportações | texto, números, hash | ✅ mesmos números do relatório metodológico; mesma execução e hash |
 
+### 4.1 Rastreabilidade (função → CSV)
+
+Fluxo comum: `projetos.Projeto.executar` → `pipeline.executar` (triagem) → `Projeto._estendido` liga cada
+registro do corpus à linha da exportação de onde veio (`arquivo_origem`, `linha_origem`) e lê os campos
+bibliográficos com `entrada.normalizar_estendido` (aliases tolerantes) → `bibliometria.analisar` →
+`relatorios.exportar` grava `relatorios/csv/*.csv` e `resultados.xlsx` (relatório: CSVs com prefixo `'` em textos
+que começam com `= + - @`; XLSX sem fórmulas).
+
+| CSV | Função | Campos usados | Transformações | Parâmetros | Denominador / unidade |
+|---|---|---|---|---|---|
+| `corpus`, `nucleo_a`, `estratos`, `contagens` | `pipeline.executar`, `nucleo.calcular_escore`, `Resultado.estratos` | title, abstract, keywords, year, citations, doi | filtros por trecho, min–max, cortes | pesos, cortes, listas de termos (`parametros.json`) | 2.068 documentos; contagens = registros em cada etapa |
+| `bib_producao_anual` | `producao_anual` | year, citations | anos completados com 0; crescimento vs ano anterior | — | documentos **com ano** (2.059) |
+| `bib_periodicos` | `periodicos` | source | espaços normalizados, `title()`; Bradford por terços acumulados | — | documentos **com periódico** (1.575) |
+| `bib_paises` | `paises` | countries (se houver) ou affiliations | último segmento da afiliação; aliases de país; 1 vez por documento | — | pares documento–país; documentos com afiliação (≈464) |
+| `bib_instituicoes` | `instituicoes` | affiliations | segmento com "Univ/Institut…" | — | pares documento–instituição |
+| `bib_areas` | `areas` | subject_area ← `Fields of Study` (Lens) | divisão por `;` | — | pares documento–área (20.715) |
+| `bib_estratos` | `estratos` | fascia | contagem | cortes | 2.068 |
+| `bib_autores_*` | `autores` | authors | separador `;` se existir, senão `,`; únicos por documento | — | autores distintos; documentos com autor (463) |
+| `bib_coautoria_*` | `coautoria` | authors | pares por documento; Louvain; intermediação no top 60 | semente 123, `top_nos=60` | arestas = pares de coautores; peso = nº de documentos |
+| `bib_coocorrencia_*` | `coocorrencia` | author_keywords → keywords → index_keywords (1º disponível) | caixa baixa; termos com freq ≥ 3; arestas peso ≥ 2; Louvain; Callon simplificado | `min_freq=3`, `min_peso=2`, semente 123 | peso = documentos com o par |
+| `bib_cocitacao_*` | `cocitacao` | references | DOI extraído se houver, senão texto (120 car.) ou ID Lens; top 300 refs citadas ≥ 2 | `min_citacoes=2`, `max_refs=300` | peso = documentos que citam o par |
+| `bib_acoplamento_arestas` | `acoplamento` | references, title | índice invertido referência → documentos; documento = título[:80] | `min_compartilhadas=1`, `max_docs_por_ref=200` | peso = referências em comum |
+| `bib_tecnologias_*` | `tecnologias`, `detectar_tecnologias` | technologies, ou regex sobre title+abstract+keywords | dicionário `TECNOLOGIAS`; categoria por `categoria_tecnologia` | dicionário | frequência = documentos; por ano = menções; % = menções da categoria / menções do ano |
+| `bib_scores_por_ano` | `scores_por_ano` | year, C/R/T/A, score_final_100 | média por ano | — | documentos com ano por ano |
+| `bib_sobreposicao_*` | `consolidacao.sobreposicao` | **bruto** (16.845 registros): source_db, doi, title | `id_obra` = DOI normalizado ou título simplificado; presença por base | — | obras distintas (12.486); **não** é o corpus |
+| `bib_cobertura` | `analisar` | — | "sim/não" por análise | — | não informa cobertura (AR-06) |
+
+**Reprodutibilidade:** com as mesmas exportações, a mesma versão e as mesmas bibliotecas, todas as tabelas são
+determinísticas (sementes fixas: Louvain 123, sensibilidade 42). Com versões diferentes de numpy/networkx, os
+**layouts** das redes mudam (AR-15); os valores, não. A partir só dos arquivos entregues é possível reproduzir
+corpus, escores, estratos, produção anual, periódicos, escores por ano, mapa temático e percentuais de tecnologia;
+autores, afiliações, áreas, palavras-chave e referências exigem as exportações.
+
 ## 5. Inconsistências encontradas (com classificação)
 
 ### 5.1 Pontos levantados pela pesquisadora
