@@ -180,3 +180,65 @@ def test_triagem_rapida(base, pagina, sinteticos, tmp_path):
     pg.click("#runBtn")
     expect(pg.locator("#status")).to_contain_text("bytes nulos", timeout=60000)
     assert [e for e in pg.erros if "422" not in e] == []      # o 422 esperado aparece como erro de rede no console
+
+
+def test_exportar_e_importar_execucao_zip(base, pagina, sinteticos, tmp_path):
+    """Exporta uma execução como .zip pela interface (download real), importa-a em outro projeto,
+    confere a marcação "importada" e a verificação, e a recusa de ID repetido — com o CSP ativo."""
+    import zipfile
+    pg = pagina
+    pg.goto(base + "/")
+    pg.fill("#pNome", "Zip origem")
+    pg.click("#btCriar")
+    expect(pg.locator("#projAtual")).to_have_text("Zip origem")
+    pg.click("nav >> text=2. Importação")
+    pg.set_input_files("#fArquivos", sinteticos)
+    pg.click("#btImportar")
+    expect(pg.locator("#tbArquivos tbody tr")).to_have_count(8, timeout=60000)
+    pg.click("nav >> text=3. Triagem")
+    pg.click("#s-triagem details summary")
+    pg.fill("#nSens", "0")
+    pg.click("#btExec")
+    expect(pg.locator("#tStatus")).to_contain_text("concluído", timeout=180000)
+    id_ = pg.text_content("#tStatus").split(":")[-1].strip()
+    pg.click("nav >> text=6. Execuções")
+    expect(pg.locator("#tbExec tbody tr")).to_have_count(1, timeout=30000)
+    # aviso de dados licenciados só aparece ao marcar a opção (padrão: desmarcada)
+    assert not pg.is_checked("#xEntradas") and not pg.is_visible("#xAviso")
+    pg.check("#xEntradas")
+    expect(pg.locator("#xAviso")).to_be_visible()
+    pg.uncheck("#xEntradas")
+    with pg.expect_download(timeout=120000) as dl:
+        pg.click("#tbExec button[data-acao=exportar]")
+    d = dl.value
+    assert d.suggested_filename.endswith(f"_{id_}.zip")
+    zpath = tmp_path / d.suggested_filename
+    d.save_as(zpath)
+    with zipfile.ZipFile(zpath) as z:
+        nomes = z.namelist()
+    assert "LEIA-ME.txt" in nomes and any(n.endswith("/manifesto.json") for n in nomes)
+    assert not any(n.startswith("entradas/") for n in nomes)
+    expect(pg.locator("#xOut")).to_contain_text("SHA-256 do manifesto.json")
+    # importar em outro projeto
+    pg.click("nav >> text=1. Projetos")
+    pg.fill("#pNome", "Zip destino")
+    pg.click("#btCriar")
+    expect(pg.locator("#projAtual")).to_have_text("Zip destino")
+    pg.click("nav >> text=6. Execuções")
+    pg.set_input_files("#xZip", str(zpath))
+    pg.click("#btImportarExec")
+    expect(pg.locator("#xOut")).to_contain_text("verificação: ok", timeout=60000)
+    expect(pg.locator("#tbExec tbody tr")).to_have_count(1)
+    expect(pg.locator("#tbExec tbody tr .tag", has_text="importada")).to_have_count(1)
+    assert pg.locator("#tbExec button[data-acao=reproduzir]").count() == 0
+    # abrir a execução importada mostra a origem
+    pg.locator("#tbExec button[data-acao=abrirExecucao]").click()
+    pg.click("nav >> text=3. Triagem")
+    expect(pg.locator("#triagemOut")).to_contain_text("Importada de")
+    # mesmo ID de novo: recusado, nada sobrescrito
+    pg.click("nav >> text=6. Execuções")
+    pg.set_input_files("#xZip", str(zpath))
+    pg.click("#btImportarExec")
+    expect(pg.locator("#msg .erro")).to_contain_text("nada foi importado nem sobrescrito", timeout=60000)
+    expect(pg.locator("#tbExec tbody tr")).to_have_count(1)
+    assert [e for e in pg.erros if "422" not in e] == []      # o 422 esperado aparece como erro de rede no console

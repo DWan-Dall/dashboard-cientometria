@@ -11,6 +11,8 @@ Estrutura em disco (raiz = $CIENTOMETRIA_PROJETOS ou ./projetos):
             diagnosticos/, bibliometria/, graficos/, relatorios/
         execucoes/.em_andamento_<id>/   execução em curso (renomeada ao terminar)
         execucoes/.falhas/<id>/         execução que falhou (com erro.txt)
+        execucoes/.importadas/<data>_<id>.json   registro de uma execução importada de .zip
+        execucoes/.importadas/<data>_<id>/entradas/  exportações de entrada vindas no .zip (opcional)
         historico.jsonl         eventos (append-only)
         .trava                  trava de arquivo (fcntl) para alterações concorrentes
 
@@ -455,6 +457,13 @@ class Projeto:
         out = corpus.merge(ext, on=chave, how="left", suffixes=("", "_ext"), validate="many_to_one")
         return out[[c for c in out.columns if not c.endswith("_ext")]]
 
+    def importacao(self, pasta_exec: str) -> dict | None:
+        """Registro de importação de uma execução (None se ela foi gerada neste projeto)."""
+        if not PASTA_EXEC_RX.match(pasta_exec):
+            return None
+        f = self.pasta / "execucoes" / ".importadas" / f"{pasta_exec}.json"
+        return _ler_json(f) if f.exists() else None
+
     def _pastas_execucao(self):
         return [p for p in sorted((self.pasta / "execucoes").iterdir()) if p.is_dir() and PASTA_EXEC_RX.match(p.name)]
 
@@ -467,7 +476,8 @@ class Projeto:
                 out.append({"id": m["id"], "pasta": p.name, "data_hora_utc": m["data_hora_utc"],
                             "rotulo": m.get("rotulo", ""), "modo": m["modo"], "versao_metodo": m["versao_metodo"],
                             "personalizada": m["configuracao_personalizada"], "contagens": m["contagens"],
-                            "estratos": m["estratos"], "hash_corpus": m["hash_corpus"]})
+                            "estratos": m["estratos"], "hash_corpus": m["hash_corpus"],
+                            "importada": self.importacao(p.name) is not None})
         return out
 
     def pasta_execucao(self, id_: str) -> Path:
@@ -487,6 +497,9 @@ class Projeto:
     def reproduzir(self, id_: str) -> dict:
         """Reexecuta com os MESMOS arquivos e parâmetros de uma execução e compara."""
         man = self.manifesto(id_)
+        if self.importacao(self.pasta_execucao(id_).name) is not None:
+            raise ValueError("Execução importada: para reproduzi-la, importe as exportações de entrada "
+                             "(SHA-256 em manifesto.json → fontes) e execute com os mesmos parâmetros.")
         cfg = Config.de_dict(man["parametros"])
         nova = self.executar(cfg, ids=man.get("arquivos_projeto"), rotulo=f"reprodução de {id_}",
                              bibliometria_=False, graficos_=False, relatorios_=False, n_sensibilidade=0,
@@ -494,25 +507,20 @@ class Projeto:
         return M.comparar(man, nova["manifesto"])
 
     # ---------------- verificação e recuperação ----------------
-    def verificar_execucao(self, id_: str) -> dict:
-        """Confere uma execução: manifesto legível, hashes das saídas, hash do corpus recalculado
-        a partir de corpus.csv e hashes dos arquivos de entrada no projeto."""
-        pasta = self.pasta_execucao(id_)
-        out = {"id": id_, "pasta": pasta.name, "problemas": []}
-        try:
-            man = _ler_json(pasta / "manifesto.json")
-        except (FileNotFoundError, IntegridadeErro) as e:
-            out["problemas"].append(f"manifesto: {e}")
-            out["ok"] = False
-            return out
+    @staticmethod
+    def conferir_saidas(pasta: Path, man: dict) -> list:
+        """Problemas nas saídas de uma pasta de execução: SHA-256 de cada arquivo contra
+        `saidas_sha256` do manifesto e hash do corpus recalculado a partir de corpus.csv.
+        Usado por `verificar_execucao`, pela exportação e pela importação (.zip)."""
+        problemas = []
         registradas = man.get("saidas_sha256")
         if registradas is None:
-            out["problemas"].append("manifesto sem saidas_sha256 (execução anterior a esta verificação)")
+            problemas.append("manifesto sem saidas_sha256 (execução anterior a esta verificação)")
         else:
             atuais = _sha_saidas(pasta)
             for k in sorted(set(registradas) | set(atuais)):
                 if registradas.get(k) != atuais.get(k):
-                    out["problemas"].append(f"saída alterada, ausente ou acrescentada: {k}")
+                    problemas.append(f"saída alterada, ausente ou acrescentada: {k}")
         c = pasta / "corpus.csv"
         if c.exists() and man.get("hash_corpus"):
             corpus = pd.read_csv(c, keep_default_na=False, dtype=str)
@@ -521,13 +529,52 @@ class Projeto:
                 if col in corpus:
                     corpus[col] = pd.to_numeric(corpus[col], errors="coerce")
             if M.hash_tabela(corpus) != man["hash_corpus"]:
-                out["problemas"].append("hash do corpus recalculado difere do manifesto")
-        reg = {a["sha256"] for a in self.arquivos(incluir_removidos=True)}
-        for f in man.get("fontes", []):
-            if f["sha256"] not in reg:
-                out["problemas"].append(f"entrada não registrada no projeto: {f['arquivo']}")
-        for prob in self.verificar_integridade(man.get("arquivos_projeto")):
-            out["problemas"].append(f"entrada {prob['nome']}: {prob['problema']}")
+                problemas.append("hash do corpus recalculado difere do manifesto")
+        return problemas
+
+    def verificar_execucao(self, id_: str) -> dict:
+        """Confere uma execução: manifesto legível, hashes das saídas, hash do corpus recalculado
+        a partir de corpus.csv e hashes dos arquivos de entrada no projeto.
+
+        Execução importada (.zip): as entradas não precisam estar registradas no projeto. Se vieram
+        no .zip, seus SHA-256 são reconferidos; se não vieram (padrão: dados licenciados), isso é
+        relatado em `avisos` — as saídas continuam verificáveis, mas a execução não é reproduzível
+        sem as exportações originais."""
+        pasta = self.pasta_execucao(id_)
+        out = {"id": id_, "pasta": pasta.name, "problemas": [], "avisos": []}
+        try:
+            man = _ler_json(pasta / "manifesto.json")
+        except (FileNotFoundError, IntegridadeErro) as e:
+            out["problemas"].append(f"manifesto: {e}")
+            out["ok"] = False
+            return out
+        out["problemas"].extend(self.conferir_saidas(pasta, man))
+        imp = self.importacao(pasta.name)
+        out["importada"] = imp is not None
+        if imp is None:
+            reg = {a["sha256"] for a in self.arquivos(incluir_removidos=True)}
+            for f in man.get("fontes", []):
+                if f["sha256"] not in reg:
+                    out["problemas"].append(f"entrada não registrada no projeto: {f['arquivo']}")
+            for prob in self.verificar_integridade(man.get("arquivos_projeto")):
+                out["problemas"].append(f"entrada {prob['nome']}: {prob['problema']}")
+        else:
+            esperadas = {f["sha256"]: f["arquivo"] for f in man.get("fontes", [])}
+            dir_ent = self.pasta / "execucoes" / ".importadas" / pasta.name / "entradas"
+            presentes = {}
+            for nome, sha in (imp.get("entradas") or {}).items():
+                f = dir_ent / nome
+                if not f.is_file() or f.is_symlink():
+                    out["problemas"].append(f"entrada importada ausente: {nome}")
+                elif sha256_arquivo(f) != sha:
+                    out["problemas"].append(f"entrada importada alterada (SHA-256): {nome}")
+                else:
+                    presentes[sha] = nome
+            faltam = [a for s, a in esperadas.items() if s not in presentes]
+            if faltam:
+                out["avisos"].append(f"execução importada sem {len(faltam)} exportação(ões) de entrada "
+                                     "(não incluídas no .zip): saídas verificáveis, execução não reproduzível "
+                                     "sem as exportações originais")
         out["ok"] = not out["problemas"]
         return out
 
@@ -549,6 +596,13 @@ class Projeto:
                 os.chmod(p, 0o600)
                 p.unlink()
                 rel["temporarios_removidos"].append(p.name)
+            for p in (self.pasta / "execucoes").glob(".importando_*"):   # importação de .zip interrompida
+                if p.is_dir() and not p.is_symlink():
+                    for x in p.rglob("*"):
+                        if not x.is_symlink():
+                            os.chmod(x, 0o700 if x.is_dir() else 0o600)
+                    shutil.rmtree(p)
+                    rel["temporarios_removidos"].append(p.name)
             for nome in ("projeto.json", "arquivos.json"):
                 try:
                     _ler_json(self.pasta / nome)

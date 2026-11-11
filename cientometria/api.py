@@ -10,6 +10,9 @@ Linha de comando para pesquisadores (sem dashboard):
     python3 -m cientometria execucoes <slug>
     python3 -m cientometria comparar <slug> <id_a> <id_b>
     python3 -m cientometria reproduzir <slug> <id>
+    python3 -m cientometria verificar-execucao <slug> <id>
+    python3 -m cientometria exportar-execucao <slug> <id> [--destino PASTA] [--incluir-entradas]
+    python3 -m cientometria importar-execucao <slug> execucao.zip
     python3 -m cientometria verificar-corpus DB_Cientometria_COMPLETA.csv
 """
 from __future__ import annotations
@@ -57,6 +60,7 @@ def _resultado_execucao(p: Projeto, id_: str, limite_top: int = 500) -> dict:
                                if f.stat().st_size > 1}
     g = pasta / "graficos"
     out["graficos"] = sorted(x.name for x in g.glob("*.png")) if g.exists() else []
+    out["importacao"] = p.importacao(pasta.name)
     r = pasta / "relatorios"
     out["relatorios"] = sorted(str(x.relative_to(pasta)) for x in r.rglob("*") if x.is_file()) if r.exists() else []
     return out
@@ -100,6 +104,16 @@ def despachar(acao: str, dados: dict) -> dict:
         return p.reproduzir(dados["id"])
     if acao == "verificar_execucao":
         return p.verificar_execucao(dados["id"])
+    if acao == "exportar_execucao":
+        from .pacote import exportar
+        # destino nunca vem do payload: a API web define CIENTOMETRIA_DIR_EXPORTACAO (temporário)
+        destino = os.environ.get("CIENTOMETRIA_DIR_EXPORTACAO") or (p.pasta / "exportacoes")
+        return exportar(p, dados["id"], Path(destino), incluir_entradas=dados.get("incluir_entradas") is True)
+    if acao == "importar_execucao":
+        from .pacote import importar
+        a = dados["arquivo"]
+        r = importar(p, a["caminho"], a.get("nome"))
+        return {**r, "execucoes": p.execucoes()}
     if acao == "comparar_modos":
         from .pipeline import executar
         bases, fontes = p.carregar(Config.original(), dados.get("arquivos"))
@@ -125,7 +139,8 @@ def principal_api(argv):
     except (Exception, MemoryError) as e:  # noqa: BLE001 — erro devolvido como JSON para a interface
         msg = f"{type(e).__name__}: {e}"
         for raiz in filter(None, [dados.get("raiz"), os.environ.get("CIENTOMETRIA_PROJETOS"),
-                                  os.environ.get("CIENTOMETRIA_DIR_IMPORTACAO"), str(Path.cwd())]):
+                                  os.environ.get("CIENTOMETRIA_DIR_IMPORTACAO"),
+                                  os.environ.get("CIENTOMETRIA_DIR_EXPORTACAO"), str(Path.cwd())]):
             msg = msg.replace(str(raiz), "<…>")
         print(json.dumps({"erro": msg[:1000]}, ensure_ascii=False))
         sys.exit(1)
@@ -161,6 +176,18 @@ def principal_cli(argv=None):
     s = sub.add_parser("reproduzir")
     s.add_argument("projeto")
     s.add_argument("id")
+    s = sub.add_parser("verificar-execucao")
+    s.add_argument("projeto")
+    s.add_argument("id")
+    s = sub.add_parser("exportar-execucao", help="grava a execução inteira num .zip verificável")
+    s.add_argument("projeto")
+    s.add_argument("id")
+    s.add_argument("--destino", default=".", help="pasta onde gravar o .zip (padrão: atual)")
+    s.add_argument("--incluir-entradas", action="store_true",
+                   help="inclui as exportações de entrada (DADOS LICENCIADOS: verifique a licença)")
+    s = sub.add_parser("importar-execucao", help="importa um .zip exportado como execução somente leitura")
+    s.add_argument("projeto")
+    s.add_argument("arquivo")
     s = sub.add_parser("verificar-corpus")
     s.add_argument("arquivo")
     s = sub.add_parser("referencia")
@@ -190,6 +217,14 @@ def principal_cli(argv=None):
         imp(Projeto.abrir(a.projeto, a.raiz).comparar(a.a, a.b))
     elif a.cmd == "reproduzir":
         imp(Projeto.abrir(a.projeto, a.raiz).reproduzir(a.id))
+    elif a.cmd == "verificar-execucao":
+        imp(Projeto.abrir(a.projeto, a.raiz).verificar_execucao(a.id))
+    elif a.cmd == "exportar-execucao":
+        from .pacote import exportar
+        imp(exportar(Projeto.abrir(a.projeto, a.raiz), a.id, Path(a.destino), incluir_entradas=a.incluir_entradas))
+    elif a.cmd == "importar-execucao":
+        from .pacote import importar
+        imp(importar(Projeto.abrir(a.projeto, a.raiz), a.arquivo))
     elif a.cmd == "verificar-corpus":
         from .auditoria import verificar_corpus_publicado
         imp(verificar_corpus_publicado(a.arquivo))

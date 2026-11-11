@@ -154,6 +154,21 @@
       <div class="card"><h2>Execuções do projeto</h2><div class="tabela" id="tbExec"></div>
         <div class="row"><label>A <select id="cmpA"></select></label><label>B <select id="cmpB"></select></label>
           <button class="btn sec" id="btCmp">Comparar</button></div><div id="cmpOut"></div></div>
+      <div class="card"><h2>Exportar / importar execução (.zip)</h2>
+        <p>O botão <b>exportar .zip</b> de cada execução gera um único arquivo com a pasta inteira da execução
+          (<code>manifesto.json</code> com o SHA-256 de cada saída, corpus, consolidado, diagnósticos, bibliometria,
+          gráficos e relatórios) e um <code>LEIA-ME.txt</code> com as instruções de verificação. Entregue o .zip
+          completo: arquivos soltos de <code>relatorios/</code> sem o manifesto não são verificáveis.</p>
+        <div class="row"><label><input type="checkbox" id="xEntradas"> incluir as exportações de entrada (dados licenciados)</label></div>
+        <div class="aviso" id="xAviso" style="display:none"><b>Atenção:</b> as exportações das bases bibliográficas costumam ter
+          licença restrita. Só inclua-as se o destinatário puder recebê-las; não publique este .zip.</div>
+        <h3>Importar execução</h3>
+        <p class="small">A execução importada fica somente leitura e marcada como <span class="tag">importada</span>.
+          Cada arquivo é conferido com o SHA-256 do manifesto; pacote adulterado, com caminhos perigosos ou com ID já
+          existente no projeto é recusado (nada é sobrescrito).</p>
+        <div class="row"><input type="file" id="xZip" accept=".zip,application/zip">
+          <button class="btn" id="btImportarExec">Importar execução (.zip)</button></div>
+        <div id="xOut"></div></div>
     </section>
 
     <!-- 7. RELATÓRIOS -->
@@ -264,7 +279,10 @@ function mostrarExecucao(j) {
   E.execucao = j.pasta; E.dados = j;
   const m = j.manifesto, c = m.contagens;
   let h = `<div class="card"><h2>Execução ${esc(m.id)} <span class="tag">${esc(m.modo)}</span><span class="tag">${esc(m.versao_metodo)}</span>${
-    m.configuracao_personalizada ? '<span class="tag" style="color:var(--warn)">personalizada</span>' : ''}</h2>`;
+    m.configuracao_personalizada ? '<span class="tag" style="color:var(--warn)">personalizada</span>' : ''}${
+    j.importacao ? '<span class="tag">importada</span>' : ''}</h2>`;
+  if (j.importacao) h += `<p class="small">Importada de <code>${esc(j.importacao.arquivo_zip)}</code> em ${esc(j.importacao.importada_em)}
+    (SHA-256 do .zip <code>${esc(j.importacao.sha256_zip)}</code>); somente leitura.</p>`;
   h += kpis({registros: c.registros, 'sem DOI': c.sem_doi, 'duplicatas DOI': c.duplicatas_doi, 'após DOI': c.apos_doi,
     únicos: c.unicos, 'núcleo obrigatório': c.nucleo_obrigatorio, candidatos: c.candidatos_antes_da_exclusao,
     'excluídos (candidatos)': c.excluidos_entre_candidatos, corpus: c.corpus, ...m.estratos});
@@ -309,9 +327,10 @@ $('btModos').onclick = seguro(async () => {
 // ---- execuções ----
 function renderExecucoes(ex) {
   $('tbExec').innerHTML = ex.length ? `<table><thead><tr><th>id</th><th>data (UTC)</th><th>rótulo</th><th>modo</th><th>versão</th><th>únicos</th><th>corpus</th><th>A/B/P/D</th><th></th></tr></thead><tbody>${
-    ex.slice().reverse().map(e => `<tr><td><code>${esc(e.id)}</code></td><td>${esc(e.data_hora_utc)}</td><td>${esc(e.rotulo)}</td><td>${esc(e.modo)}${e.personalizada ? ' *' : ''}</td><td>${esc(e.versao_metodo)}</td>
+    ex.slice().reverse().map(e => `<tr><td><code>${esc(e.id)}</code>${e.importada ? ' <span class="tag" title="importada de .zip (somente leitura)">importada</span>' : ''}</td><td>${esc(e.data_hora_utc)}</td><td>${esc(e.rotulo)}</td><td>${esc(e.modo)}${e.personalizada ? ' *' : ''}</td><td>${esc(e.versao_metodo)}</td>
       <td>${fmt(e.contagens.unicos)}</td><td>${fmt(e.contagens.corpus)}</td><td>${Object.values(e.estratos).join(' / ')}</td>
-      <td><button class="btn sec" data-acao="abrirExecucao" data-arg="${esc(e.id)}">abrir</button> <button class="btn sec" data-acao="reproduzir" data-arg="${esc(e.id)}">reproduzir</button></td></tr>`).join('')}</tbody></table><p class="small">* configuração personalizada</p>`
+      <td><button class="btn sec" data-acao="abrirExecucao" data-arg="${esc(e.id)}">abrir</button> ${e.importada ? '' : `<button class="btn sec" data-acao="reproduzir" data-arg="${esc(e.id)}">reproduzir</button>`}
+        <button class="btn sec" data-acao="exportar" data-arg="${esc(e.id)}">exportar .zip</button></td></tr>`).join('')}</tbody></table><p class="small">* configuração personalizada</p>`
     : '<p class="small">Nenhuma execução.</p>';
   const ops = ex.map(e => `<option value="${esc(e.id)}">${esc(e.id)} · ${esc(e.modo)} · ${esc(e.data_hora_utc)}</option>`).join('');
   $('cmpA').innerHTML = ops; $('cmpB').innerHTML = ops;
@@ -333,9 +352,48 @@ $('btCmp').onclick = seguro(async () => {
     + '<h3>Arquivos diferentes</h3>' + tabela(Object.entries(c.arquivos).map(([k, v]) => ({arquivo: k, a: v.a, b: v.b})));
 });
 
+// ---- exportar / importar execução (.zip) ----
+$('xEntradas').onchange = () => { $('xAviso').style.display = $('xEntradas').checked ? '' : 'none'; };
+window.exportar = seguro(async id => {
+  const r = await fetch('api.php?acao=exportar_execucao', {method: 'POST', credentials: 'same-origin',
+    headers: {'X-CSRF-Token': CSRF, 'Content-Type': 'application/json'},
+    body: JSON.stringify({projeto: E.projeto, id, incluir_entradas: $('xEntradas').checked})});
+  if (!r.ok || !(r.headers.get('Content-Type') || '').startsWith('application/zip')) {
+    const t = await r.text(); let j = null;
+    try { j = JSON.parse(t); } catch (_) { /* resposta não-JSON */ }
+    throw new Error(j && j.erro ? j.erro : 'Falha na exportação: ' + t.slice(0, 300));
+  }
+  const nome = ((r.headers.get('Content-Disposition') || '').match(/filename="([A-Za-z0-9_.-]+)"/) || [])[1] || 'execucao.zip';
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  const n = Number(r.headers.get('X-Cientometria-Entradas') || 0);
+  $('xOut').innerHTML = `<p>Exportado <code>${esc(nome)}</code> (${fmt(blob.size)} bytes).<br>
+    <span class="small">SHA-256 do .zip: <code>${esc(r.headers.get('X-Cientometria-Sha256'))}</code><br>
+    SHA-256 do manifesto.json: <code>${esc(r.headers.get('X-Cientometria-Sha256-Manifesto'))}</code> — registre este valor para provar a autenticidade.<br>
+    Exportações de entrada incluídas: ${n ? fmt(n) + ' (dados licenciados — não publique)' : 'não'}</span></p>`;
+});
+$('btImportarExec').onclick = seguro(async () => {
+  const f = $('xZip').files[0]; if (!f) throw new Error('Selecione um arquivo .zip.');
+  const fd = new FormData(); fd.append('files[]', f); fd.append('projeto', E.projeto);
+  $('btImportarExec').disabled = true;
+  try {
+    const j = await api('importar_execucao', {}, fd);
+    const v = j.verificacao;
+    $('xOut').innerHTML = `<p>Execução <code>${esc(j.id)}</code> importada <span class="tag">importada</span>
+      — verificação: <b class="${v.ok ? 'okb' : 'badb'}">${v.ok ? 'ok' : 'PROBLEMAS'}</b></p>`
+      + (v.problemas.length ? '<ul>' + v.problemas.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '')
+      + (v.avisos.length ? `<p class="small">${v.avisos.map(esc).join('<br>')}</p>` : '');
+    await abrirProjeto(E.projeto);
+  } finally { $('btImportarExec').disabled = false; $('xZip').value = ''; }
+});
+
 // ações dos botões gerados dinamicamente (sem handlers inline: CSP com nonce)
 const ACOES_BOTAO = {abrirProjeto: x => abrirProjeto(x), desativar: x => desativar(x),
-                     abrirExecucao: x => abrirExecucao(x), reproduzir: x => reproduzir(x)};
+                     abrirExecucao: x => abrirExecucao(x), reproduzir: x => reproduzir(x),
+                     exportar: x => exportar(x)};
 document.addEventListener('click', ev => {
   const b = ev.target.closest('button[data-acao]');
   if (b && ACOES_BOTAO[b.dataset.acao]) ACOES_BOTAO[b.dataset.acao](b.dataset.arg);

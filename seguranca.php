@@ -188,6 +188,9 @@ if (!defined('CIENTOMETRIA_SEGURANCA')) {
     if (!mkdir($dir, 0700)) {
       seg_negar(500, 'Falha ao criar diretório temporário.');
     }
+    // exit()/seg_negar() não executam blocos finally: a remoção também fica agendada para o fim
+    // da requisição (o diretório pode conter exportações licenciadas ou um .zip de execução).
+    register_shutdown_function('seg_remover_diretorio', $dir);
     return $dir;
   }
 
@@ -201,13 +204,23 @@ if (!defined('CIENTOMETRIA_SEGURANCA')) {
     @rmdir($dir);
   }
 
+  // Limite do pacote .zip de execução (importar_execucao). O Python revalida tamanho do .zip,
+  // tamanho descompactado, número de membros, nomes e hashes (cientometria/pacote.py).
+  function seg_limite_zip() {
+    return (int)(getenv('CIENTOMETRIA_MAX_MB_ZIP') ?: 200) * 1024 * 1024;
+  }
+
   // Recebe $_FILES['files'] com validação de nome, extensão, tamanho e quantidade.
-  function seg_receber_uploads($dir) {
+  // Padrão: exportações das bases. Para outro tipo de upload, passe as extensões aceitas e
+  // os limites (ex.: pacote de execução: ['zip'], 1 arquivo, seg_limite_zip()).
+  function seg_receber_uploads($dir, $ext_ok = null, $maxN = null, $max = null) {
     if (!isset($_FILES['files']) || !is_array($_FILES['files']['name'])) {
       seg_negar(400, 'Nenhum arquivo enviado.');
     }
-    [$max, $maxN] = seg_limites();
-    $ext_ok = ['csv', 'tsv', 'txt', 'xlsx', 'xls', 'ris', 'bib', 'bibtex', 'nbib'];
+    [$maxPadrao, $maxNPadrao] = seg_limites();
+    $max = $max ?? $maxPadrao;
+    $maxN = $maxN ?? $maxNPadrao;
+    $ext_ok = $ext_ok ?? ['csv', 'tsv', 'txt', 'xlsx', 'xls', 'ris', 'bib', 'bibtex', 'nbib'];
     $n = count($_FILES['files']['name']);
     if ($n > $maxN) seg_negar(413, "Máximo de $maxN arquivos por envio.");
     $saida = [];
